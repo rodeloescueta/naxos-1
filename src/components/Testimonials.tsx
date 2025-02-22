@@ -53,7 +53,7 @@ export default function Testimonials() {
                   {/* Content */}
                   <div className="relative max-w-xl">
                     <p className="text-[#c4a484] text-lg md:text-xl leading-relaxed mb-8">
-                      "{testimonial.comment}"
+                      &ldquo;{testimonial.comment}&rdquo;
                     </p>
                     <div>
                       <h4 className="text-xl md:text-2xl font-semibold text-[#e6c9a2]">

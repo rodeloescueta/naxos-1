@@ -32,7 +32,7 @@ const ContactSection = () => {
             Get in Touch
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            We'd love to hear from you. Visit us, make a reservation, or connect on social media.
+            We&apos;d love to hear from you. Visit us, make a reservation, or connect on social media.
           </p>
         </motion.div>
 
