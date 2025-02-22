@@ -8,8 +8,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Naxos - Fresh and Healthy Food Delivery",
-  description: "Fresh and healthy food delivered to your doorstep",
+  title: "Naxos - Fresh and Healthy Food",
+  description: "Fresh and healthy food",
   icons: {
     icon: '/images/logo.png',
     apple: '/images/logo.png',

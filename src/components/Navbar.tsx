@@ -45,7 +45,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-8">
             <motion.button
               onClick={() => scrollToSection("menu")}
-              className="text-muted-foreground hover:text-white text-accent transition"
+              className="text-muted-foreground text-lg text-boldtext-white hover:text-accent transition"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -53,7 +53,7 @@ const Navbar = () => {
             </motion.button>
             <motion.button
               onClick={() => scrollToSection("location")}
-              className="text-muted-foreground hover:text-white text-accent transition"
+              className="text-muted-foreground text-lg text-bold text-white hover:text-accent transition"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -61,7 +61,7 @@ const Navbar = () => {
             </motion.button>
             <motion.button
               onClick={() => scrollToSection("contact")}
-              className="text-muted-foreground hover:text-white text-accent transition"
+              className="text-muted-foreground text-lg text-bold text-white hover:text-accent transition"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -75,12 +75,12 @@ const Navbar = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Button variant="ghost" size="icon" className="relative">
+            {/* <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-6 w-6 text-foreground" />
               <span className="absolute -top-2 -right-2 bg-accent text-accent-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                 2
               </span>
-            </Button>
+            </Button> */}
           </motion.div>
         </div>
       </div>

@@ -36,7 +36,7 @@ const Hero = () => {
             Food Specialties
           </h1>
           <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
-            Variety of fresh and fresh food served just for you, your solution when hungry in the middle of the night with super fast delivery
+            Variety of fresh and fresh food served just for you.
           </p>
         </motion.div>
 

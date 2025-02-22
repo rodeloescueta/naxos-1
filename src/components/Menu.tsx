@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+// import { Plus } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { Carousel } from "./ui/carousel";
@@ -87,9 +87,9 @@ export default function Menu() {
                     whileTap={{ scale: 0.9 }}
                     className="flex justify-end"
                   >
-                    <Button size="icon" className="shrink-0">
+                    {/* <Button size="icon" className="shrink-0">
                       <Plus className="h-4 w-4" />
-                    </Button>
+                    </Button> */}
                   </motion.div>
                 </div>
               </motion.div>
