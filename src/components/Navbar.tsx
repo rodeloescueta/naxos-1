@@ -3,6 +3,7 @@
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 const Navbar = () => {
   const scrollToSection = (sectionId: string) => {
@@ -28,6 +29,15 @@ const Navbar = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
+            <div className="relative w-8 h-8">
+              <Image
+                src="/images/logo.png"
+                alt="Naxos Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
             <span className="text-2xl font-bold font-display text-foreground">Naxos</span>
           </motion.button>
 
