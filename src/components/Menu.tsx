@@ -56,41 +56,52 @@ export default function Menu() {
         </div>
 
         <div className="max-w-6xl mx-auto">
-          <Carousel slideClassName="px-2 md:px-4">
+          <Carousel slideClassName="pl-4 md:px-4">
             {items.map((item) => (
               <motion.div
                 key={item.name}
-                className="bg-card/90 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg"
+                className="relative rounded-xl overflow-hidden shadow-lg mr-4 md:mr-0"
                 whileHover={{ scale: 1.02, translateY: -5 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="aspect-[16/10] relative">
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="p-4 md:p-6">
-                  <div className="flex justify-between items-start gap-4 mb-2">
-                    <h3 className="text-lg md:text-xl font-semibold flex-1">{item.name}</h3>
-                    <span className="text-base md:text-lg font-medium text-primary whitespace-nowrap">
-                      {item.price}
-                    </span>
+                {/* Wooden board background */}
+                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(/images/decorative/board.jpeg)' }} />
+                
+                {/* Dark overlay for better readability */}
+                <div className="absolute inset-0 bg-black/40" />
+
+                {/* Content container with glass effect */}
+                <div className="relative">
+                  <div className="aspect-[16/10] relative">
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                    />
                   </div>
-                  <p className="text-sm md:text-base text-muted-foreground mb-4 line-clamp-2">
-                    {item.description}
-                  </p>
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="flex justify-end"
-                  >
-                    {/* <Button size="icon" className="shrink-0">
-                      <Plus className="h-4 w-4" />
-                    </Button> */}
-                  </motion.div>
+                  <div className="p-4 md:p-6 backdrop-blur-sm bg-black/30">
+                    <div className="flex justify-between items-start gap-4 mb-2">
+                      <h3 className="text-lg md:text-xl font-semibold flex-1 text-white">
+                        {item.name}
+                      </h3>
+                      <span className="text-base md:text-lg font-medium text-white whitespace-nowrap">
+                        {item.price}
+                      </span>
+                    </div>
+                    <p className="text-sm md:text-base text-gray-200 mb-4 line-clamp-2">
+                      {item.description}
+                    </p>
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="flex justify-end"
+                    >
+                      {/* <Button size="icon" className="shrink-0">
+                        <Plus className="h-4 w-4" />
+                      </Button> */}
+                    </motion.div>
+                  </div>
                 </div>
               </motion.div>
             ))}

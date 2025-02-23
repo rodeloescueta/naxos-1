@@ -24,16 +24,16 @@ export default function Testimonials() {
         </motion.div>
 
         <div className="max-w-5xl mx-auto">
-          <Carousel slideClassName="px-4">
+          <Carousel slideClassName="pl-4 md:px-4">
             {testimonials.map((testimonial) => (
               <motion.div
                 key={testimonial.id}
-                className="relative"
+                className="relative md:pt-48 mr-4 md:mr-0"
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.2 }}
               >
-                {/* Profile Image - Overlapped */}
-                <div className="absolute -top-32 md:-top-40 right-8 w-64 h-64 md:w-96 md:h-96 z-10">
+                {/* Profile Image - Right side on mobile, top on desktop */}
+                <div className="absolute md:absolute right-4 top-1/2 md:-top-8 md:right-8 w-48 h-48 md:w-96 md:h-96 -translate-y-1/2 md:translate-y-0 z-10">
                   <div className="relative w-full h-full">
                     <Image
                       src={testimonial.image}
@@ -45,21 +45,21 @@ export default function Testimonials() {
                 </div>
 
                 {/* Testimonial Card */}
-                <div className="bg-[#1a1512]/60 backdrop-blur-sm rounded-3xl p-8 md:p-12 mt-48 md:mt-64">
+                <div className="relative bg-[#1a1512]/60 backdrop-blur-none rounded-3xl p-6 pr-52 md:p-12">
                   {/* Decorative elements */}
                   <div className="absolute -top-2 -right-2 w-20 h-20 bg-accent/5 rounded-full blur-xl" />
                   <div className="absolute -bottom-2 -left-2 w-20 h-20 bg-accent/5 rounded-full blur-xl" />
 
                   {/* Content */}
                   <div className="relative max-w-xl">
-                    <p className="text-[#c4a484] text-lg md:text-xl leading-relaxed mb-8">
+                    <p className="text-[#c4a484] text-base md:text-xl leading-relaxed mb-6 md:mb-8">
                       &ldquo;{testimonial.comment}&rdquo;
                     </p>
                     <div>
-                      <h4 className="text-xl md:text-2xl font-semibold text-[#e6c9a2]">
+                      <h4 className="text-lg md:text-2xl font-semibold text-[#e6c9a2]">
                         {testimonial.name}
                       </h4>
-                      <p className="text-[#a68a6c] text-lg">{testimonial.role}</p>
+                      <p className="text-[#a68a6c] text-base md:text-lg">{testimonial.role}</p>
                     </div>
                   </div>
                 </div>
@@ -82,4 +82,4 @@ export default function Testimonials() {
       </div>
     </section>
   );
-} 
+}
