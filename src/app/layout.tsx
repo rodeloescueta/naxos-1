@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -38,7 +39,9 @@ export default function RootLayout({
         {/* Dark overlay */}
         <div className="fixed inset-0 -z-10 bg-black/40" />
 
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

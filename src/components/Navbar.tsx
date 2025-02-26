@@ -2,12 +2,27 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
+  const { user, userRole, signOut, isLoading } = useAuth();
+  const router = useRouter();
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.refresh();
+    } catch (error) {
+      console.error('Sign out error:', error);
     }
   };
 
@@ -67,19 +82,50 @@ const Navbar = () => {
             </motion.button>
           </div>
 
-          {/* Cart */}
-          <motion.div 
-            className="flex items-center space-x-4"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {/* <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="h-6 w-6 text-foreground" />
-              <span className="absolute -top-2 -right-2 bg-accent text-accent-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                2
-              </span>
-            </Button> */}
-          </motion.div>
+          {/* Auth Actions */}
+          <div className="flex items-center space-x-4">
+            {!isLoading && (
+              <>
+                {user ? (
+                  <div className="flex items-center space-x-4">
+                    {userRole === 'admin' && (
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Link 
+                          href="/admin" 
+                          className="text-white bg-amber-600 hover:bg-amber-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                        >
+                          Admin
+                        </Link>
+                      </motion.div>
+                    )}
+                    <motion.button
+                      onClick={handleSignOut}
+                      className="text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Sign Out
+                    </motion.button>
+                  </div>
+                ) : (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Link 
+                      href="/login" 
+                      className="text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                  </motion.div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </motion.nav>
