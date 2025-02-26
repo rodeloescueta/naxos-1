@@ -32,27 +32,31 @@ export default function AdminPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        setLoading(true);
         const currentUser = await getCurrentUser();
         setUser(currentUser);
         
-        if (currentUser) {
-          const adminCheck = await isAdmin(currentUser);
-          setAdminStatus(adminCheck);
-          
-          // If not admin, redirect to home
-          if (!adminCheck) {
-            router.push('/');
-          } else {
-            // Load menu items if admin
-            loadMenuItems();
-          }
+        if (!currentUser) {
+          console.log('No user found, redirecting to login');
+          router.push('/login?redirect=/admin');
+          return;
+        }
+        
+        const adminCheck = await isAdmin(currentUser);
+        setAdminStatus(adminCheck);
+        
+        // If not admin, redirect to home
+        if (!adminCheck) {
+          console.log('User is not admin, redirecting to home');
+          router.push('/');
         } else {
-          // If not logged in, redirect to login
-          router.push('/login');
+          console.log('User is admin, loading menu items');
+          // Load menu items if admin
+          loadMenuItems();
         }
       } catch (error) {
         console.error('Authentication error:', error);
-        router.push('/login');
+        router.push('/login?redirect=/admin');
       } finally {
         setLoading(false);
       }

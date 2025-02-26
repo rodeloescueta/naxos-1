@@ -34,16 +34,16 @@ export default function CheckRolePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-lg">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <p className="text-lg text-gray-800">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-white p-8">
       <div className="mx-auto max-w-2xl bg-white shadow rounded-lg p-6">
-        <h1 className="text-2xl font-bold mb-6">Authentication Status</h1>
+        <h1 className="text-2xl font-bold mb-6 text-gray-900">Authentication Status</h1>
         
         {user ? (
           <div className="space-y-4">
@@ -52,10 +52,10 @@ export default function CheckRolePage() {
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-lg font-semibold">User Details:</h2>
-              <p><strong>Email:</strong> {user.email}</p>
-              <p><strong>User ID:</strong> {user.id}</p>
-              <p><strong>Role:</strong> {role || 'No role assigned'}</p>
+              <h2 className="text-lg font-semibold text-gray-800">User Details:</h2>
+              <p className="text-gray-700"><strong>Email:</strong> {user.email}</p>
+              <p className="text-gray-700"><strong>User ID:</strong> {user.id}</p>
+              <p className="text-gray-700"><strong>Role:</strong> {role || 'No role assigned'}</p>
               
               {role === 'admin' ? (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mt-2">

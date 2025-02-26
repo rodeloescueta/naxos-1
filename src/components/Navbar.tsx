@@ -96,6 +96,16 @@ const Navbar = () => {
                         <Link 
                           href="/admin" 
                           className="text-white bg-amber-600 hover:bg-amber-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            
+                            if (userRole === 'admin') {
+                              router.push('/admin');
+                            } else {
+                              console.log('User is not admin, redirecting to login');
+                              router.push('/login?redirect=/admin');
+                            }
+                          }}
                         >
                           Admin
                         </Link>
