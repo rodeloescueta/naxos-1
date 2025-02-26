@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Naxos - Restaurant Website
+
+A modern restaurant website built with Next.js, featuring menu management, authentication, and role-based access control using Supabase.
+
+## Features
+
+- **Public Website**: Showcase menu items, location, and contact information
+- **Authentication**: User login and registration with Supabase Auth
+- **Role-Based Access Control**: Admin-only access to the management dashboard
+- **Menu Management**: Create, read, update, and delete menu items
+- **Image Upload**: Upload and manage menu item images with Cloudinary
+- **Responsive Design**: Mobile-friendly interface with Tailwind CSS
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React 18, TypeScript
+- **Styling**: Tailwind CSS, Shadcn UI components
+- **Authentication**: Supabase Auth
+- **Database**: Supabase PostgreSQL
+- **Image Storage**: Cloudinary
+- **Animation**: Framer Motion
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js 18.17 or later
+- pnpm (recommended) or npm
+- Supabase account
+- Cloudinary account
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/naxos.git
+   cd naxos
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
 
-## Learn More
+3. Set up environment variables:
+   - Copy `.env.local.example` to `.env.local`
+   - Fill in your Supabase and Cloudinary credentials
 
-To learn more about Next.js, take a look at the following resources:
+4. Set up the database:
+   - Follow the instructions in `SUPABASE_SETUP.md` to set up your Supabase project
+   - Run the SQL queries in `supabase/schema.sql` to create the necessary tables and policies
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+5. Start the development server:
+   ```bash
+   pnpm dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+6. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Deploy on Vercel
+## Authentication and Authorization
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The application uses Supabase for authentication and implements role-based access control:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Public users**: Can view the website and menu items
+- **Authenticated users**: Can log in and access their profile
+- **Admin users**: Can access the admin dashboard and manage menu items
+
+Admin access is controlled through user metadata in Supabase. See `SUPABASE_SETUP.md` for instructions on how to assign the admin role to a user.
+
+## Deployment
+
+The application can be deployed to Vercel:
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Set up the environment variables in Vercel
+4. Deploy
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- [Next.js](https://nextjs.org)
+- [Supabase](https://supabase.com)
+- [Tailwind CSS](https://tailwindcss.com)
+- [Shadcn UI](https://ui.shadcn.com)
+- [Framer Motion](https://www.framer.com/motion)
+- [Cloudinary](https://cloudinary.com)
