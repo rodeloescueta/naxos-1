@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { createServiceClient } from './supabase';
+import { getCurrentUser, isAdmin } from './auth';
 
 export interface MenuItem {
   id: string;
@@ -31,7 +32,7 @@ export interface UpdateMenuItemData {
   is_featured?: boolean;
 }
 
-// Get all menu items
+// Get all menu items - public access
 export async function getMenuItems(): Promise<MenuItem[]> {
   const { data, error } = await supabase
     .from('menu_items')
@@ -46,7 +47,7 @@ export async function getMenuItems(): Promise<MenuItem[]> {
   return data || [];
 }
 
-// Get a single menu item by ID
+// Get a single menu item by ID - public access
 export async function getMenuItem(id: string): Promise<MenuItem | null> {
   const { data, error } = await supabase
     .from('menu_items')
@@ -64,7 +65,16 @@ export async function getMenuItem(id: string): Promise<MenuItem | null> {
 
 // Create a new menu item (requires admin role)
 export async function createMenuItem(menuItem: CreateMenuItemData): Promise<MenuItem> {
-  const { data, error } = await supabase
+  // Check if the current user is an admin
+  const currentUser = await getCurrentUser();
+  if (!isAdmin(currentUser)) {
+    throw new Error('Unauthorized: Admin access required');
+  }
+  
+  // Use service client for admin operations
+  const serviceClient = createServiceClient();
+  
+  const { data, error } = await serviceClient
     .from('menu_items')
     .insert([menuItem])
     .select()
@@ -80,7 +90,16 @@ export async function createMenuItem(menuItem: CreateMenuItemData): Promise<Menu
 
 // Update a menu item (requires admin role)
 export async function updateMenuItem(id: string, updates: UpdateMenuItemData): Promise<MenuItem> {
-  const { data, error } = await supabase
+  // Check if the current user is an admin
+  const currentUser = await getCurrentUser();
+  if (!isAdmin(currentUser)) {
+    throw new Error('Unauthorized: Admin access required');
+  }
+  
+  // Use service client for admin operations
+  const serviceClient = createServiceClient();
+  
+  const { data, error } = await serviceClient
     .from('menu_items')
     .update(updates)
     .eq('id', id)
@@ -97,7 +116,16 @@ export async function updateMenuItem(id: string, updates: UpdateMenuItemData): P
 
 // Delete a menu item (requires admin role)
 export async function deleteMenuItem(id: string): Promise<void> {
-  const { error } = await supabase
+  // Check if the current user is an admin
+  const currentUser = await getCurrentUser();
+  if (!isAdmin(currentUser)) {
+    throw new Error('Unauthorized: Admin access required');
+  }
+  
+  // Use service client for admin operations
+  const serviceClient = createServiceClient();
+  
+  const { error } = await serviceClient
     .from('menu_items')
     .delete()
     .eq('id', id);
@@ -108,7 +136,7 @@ export async function deleteMenuItem(id: string): Promise<void> {
   }
 }
 
-// Get featured menu items
+// Get featured menu items - public access
 export async function getFeaturedMenuItems(): Promise<MenuItem[]> {
   const { data, error } = await supabase
     .from('menu_items')
@@ -124,7 +152,7 @@ export async function getFeaturedMenuItems(): Promise<MenuItem[]> {
   return data || [];
 }
 
-// Get menu items by category
+// Get menu items by category - public access
 export async function getMenuItemsByCategory(category: string): Promise<MenuItem[]> {
   const { data, error } = await supabase
     .from('menu_items')
@@ -140,8 +168,15 @@ export async function getMenuItemsByCategory(category: string): Promise<MenuItem
   return data || [];
 }
 
-// Admin function to get all menu items (using service role)
+// Admin function to get all menu items (requires admin role)
 export async function adminGetAllMenuItems(): Promise<MenuItem[]> {
+  // Check if the current user is an admin
+  const currentUser = await getCurrentUser();
+  if (!isAdmin(currentUser)) {
+    throw new Error('Unauthorized: Admin access required');
+  }
+  
+  // Use service client for admin operations
   const serviceClient = createServiceClient();
   
   const { data, error } = await serviceClient

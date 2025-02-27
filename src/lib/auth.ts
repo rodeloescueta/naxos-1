@@ -9,9 +9,13 @@ export interface UserProfile {
   role: UserRole;
 }
 
-// In our simplified approach, any authenticated user is considered an admin
+// Check if user is an admin by examining their email
 export function isAdmin(user: User | null): boolean {
-  return !!user;
+  if (!user) return false;
+  
+  // Check if the user's email is in the admin list from environment variable
+  const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || [];
+  return adminEmails.some(email => email.trim().toLowerCase() === user.email?.toLowerCase());
 }
 
 export async function signUp(email: string, password: string) {
@@ -20,7 +24,8 @@ export async function signUp(email: string, password: string) {
     password,
     options: {
       data: {
-        role: 'admin', // All users are admins in our simplified approach
+        // Set role based on whether the email is in the admin list
+        role: isAdmin({ email } as User) ? 'admin' : 'user',
       },
     },
   });
@@ -61,8 +66,12 @@ export async function getCurrentUser(): Promise<User | null> {
 export async function getUserRole(user: User | null): Promise<UserRole | null> {
   if (!user) return null;
   
-  // In our simplified approach, all authenticated users have admin role
-  return 'admin';
+  // Check if the user is an admin
+  if (isAdmin(user)) {
+    return 'admin';
+  }
+  
+  return 'user';
 }
 
 export async function getSession() {

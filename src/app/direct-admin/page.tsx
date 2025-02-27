@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isAdmin } from '@/lib/auth';
 import { User } from '@supabase/supabase-js';
 import { 
   MenuItem, 
@@ -21,6 +21,7 @@ import { signOut } from '@/lib/auth';
 export default function DirectAdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdminUser, setIsAdminUser] = useState(false);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isMenuItemsLoading, setIsMenuItemsLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -42,9 +43,20 @@ export default function DirectAdminPage() {
           return;
         }
         
-        console.log('User authenticated:', currentUser.email);
+        // Check if the user is an admin
+        const adminCheck = isAdmin(currentUser);
+        setIsAdminUser(adminCheck);
         
-        // Load menu items for authenticated user
+        console.log('User authenticated:', currentUser.email);
+        console.log('Admin status:', adminCheck);
+        
+        if (!adminCheck) {
+          console.log('User is not an admin, redirecting to home');
+          router.push('/');
+          return;
+        }
+        
+        // Load menu items for admin user
         loadMenuItems();
       } catch (error) {
         console.error('Authentication error:', error);
@@ -55,7 +67,7 @@ export default function DirectAdminPage() {
     };
 
     checkAuth();
-  }, []);
+  }, [router]);
 
   const loadMenuItems = async () => {
     setIsMenuItemsLoading(true);
@@ -152,6 +164,30 @@ export default function DirectAdminPage() {
             <Button asChild>
               <a href="/login?redirect=/direct-admin">Sign In</a>
             </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdminUser) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="bg-white shadow rounded-lg p-6">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+            <p className="text-gray-700 mb-4">
+              You do not have admin privileges to access this page.
+              Only users with admin role can access the admin dashboard.
+            </p>
+            <div className="flex space-x-4">
+              <Button asChild variant="default">
+                <a href="/">Go to Home</a>
+              </Button>
+              <Button variant="outline" onClick={handleSignOut}>
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </div>
