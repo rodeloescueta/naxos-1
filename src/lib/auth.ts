@@ -9,26 +9,18 @@ export interface UserProfile {
   role: UserRole;
 }
 
-// Function to check if an email is in the admin list
-export function isEmailInAdminList(email: string | undefined | null): boolean {
-  if (!email) return false;
-  
-  const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS || '';
-  console.log('Admin emails from env:', adminEmails);
-  const adminEmailList = adminEmails.split(',').map(e => e.trim().toLowerCase());
-  console.log('Admin email list:', adminEmailList);
-  console.log('Checking email:', email.toLowerCase());
-  
-  return adminEmailList.includes(email.toLowerCase());
+// In our simplified approach, any authenticated user is considered an admin
+export function isAdmin(user: User | null): boolean {
+  return !!user;
 }
 
-export async function signUp(email: string, password: string, role: UserRole = 'user') {
+export async function signUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
-        role: isEmailInAdminList(email) ? 'admin' : role,
+        role: 'admin', // All users are admins in our simplified approach
       },
     },
   });
@@ -69,26 +61,8 @@ export async function getCurrentUser(): Promise<User | null> {
 export async function getUserRole(user: User | null): Promise<UserRole | null> {
   if (!user) return null;
   
-  // First check if the email is in the admin list
-  if (isEmailInAdminList(user.email)) {
-    return 'admin';
-  }
-  
-  // Fallback to checking user metadata
-  return (user.user_metadata?.role as UserRole) || null;
-}
-
-export async function isAdmin(user: User | null): Promise<boolean> {
-  if (!user) return false;
-  
-  // First check if the email is in the admin list
-  if (isEmailInAdminList(user.email)) {
-    return true;
-  }
-  
-  // Fallback to checking user role in metadata
-  const role = await getUserRole(user);
-  return role === 'admin';
+  // In our simplified approach, all authenticated users have admin role
+  return 'admin';
 }
 
 export async function getSession() {

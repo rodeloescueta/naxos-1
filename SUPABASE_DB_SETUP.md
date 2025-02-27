@@ -1,74 +1,94 @@
-# Supabase Database Setup Guide
+# Naxos Restaurant Website - Database Setup Guide
 
-This guide provides instructions for setting up the database tables for the Naxos restaurant website.
+This guide provides instructions for setting up the database for the Naxos restaurant website. The database is used to store menu items and other content that can be managed through the admin interface.
 
-## Setting Up the Menu Items Table
+## Setting Up the Database
 
-### Option 1: Simple Setup (Recommended for Development)
+We've simplified the database setup to work consistently across both development and production environments.
 
-For a quick setup that allows any authenticated user to manage menu items:
+### Database Setup Steps
 
-1. Log in to your Supabase dashboard at https://app.supabase.com
-2. Select your project
-3. Go to the "SQL Editor" section
-4. Create a new query
-5. Copy and paste the SQL from the `supabase/simple-schema.sql` file
-6. Run the query
+1. **Log in to the Supabase Dashboard**
+   - Go to [https://app.supabase.com/](https://app.supabase.com/)
+   - Sign in with your credentials
 
-This setup will:
-- Create the `menu_items` table with all necessary columns
-- Enable Row Level Security (RLS)
-- Allow public read access to menu items
-- Allow any authenticated user to create, update, and delete menu items
-- Set up automatic updating of the `updated_at` timestamp
+2. **Select Your Project**
+   - From the dashboard, select the project you created for the Naxos restaurant website
 
-### Option 2: Email-Based Access Control (Recommended for Production)
+3. **Navigate to the SQL Editor**
+   - In the left sidebar, click on "SQL Editor"
+   - Click "New Query" to create a new SQL query
 
-For a more secure setup that only allows specific admin emails to manage menu items:
+4. **Run the Unified Schema SQL**
+   - Copy the contents of the `supabase/unified-schema.sql` file from this project
+   - Paste it into the SQL Editor
+   - Click "Run" to execute the query
 
-1. Log in to your Supabase dashboard
-2. Go to the "SQL Editor" section
-3. Create a new query
-4. Copy and paste the SQL from the `supabase/schema.sql` file
-5. Before running the query, replace `'admin@example.com'` in the `ALTER SYSTEM SET app.admin_emails` line with your actual admin email(s), comma-separated
-6. Run the query
+5. **Verify the Setup**
+   - In the left sidebar, click on "Table Editor"
+   - You should see the `menu_items` and `blogs` tables in the list
+   - Click on the `menu_items` table to verify its structure
 
-This setup will:
-- Create the `menu_items` and `blogs` tables with all necessary columns
-- Enable Row Level Security (RLS)
-- Allow public read access to menu items and published blogs
-- Allow only specified admin emails to create, update, and delete menu items and blogs
-- Set up automatic updating of the `updated_at` timestamp
+## Access Control
+
+Our unified approach uses a simplified access control model:
+
+- **Public Read Access**: Anyone can view menu items and published blog posts
+- **Authenticated Write Access**: Any authenticated user can manage menu items and blog posts
+
+This approach works well for both development and production environments where you control who has authentication credentials.
+
+## Setting Up Admin Access
+
+To manage content, you need to:
+
+1. **Create an Admin User**
+   - Sign up for an account on your Naxos website
+   - This user will automatically have admin privileges when authenticated
+
+2. **Access the Admin Interface**
+   - After logging in, you'll be redirected to the Direct Admin page
+   - You can also navigate to `/direct-admin` manually
 
 ## Testing the Setup
 
-After setting up the database:
+1. **Ensure Environment Variables**
+   - Make sure your `.env.local` file contains the correct Supabase credentials:
+     ```
+     NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+     ```
 
-1. Make sure your `.env.local` file has the correct Supabase credentials:
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-   NEXT_PUBLIC_ADMIN_EMAILS=your_admin_email@example.com
-   ```
+2. **Start the Development Server**
+   - Run `npm run dev` to start the development server
 
-2. Start your development server:
-   ```
-   npm run dev
-   ```
+3. **Sign In**
+   - Navigate to the login page
+   - Sign in with your credentials
 
-3. Sign in with your admin email at `/login`
-4. Navigate to `/direct-admin` to manage menu items
+4. **Access the Admin Interface**
+   - After signing in, you'll be redirected to the Direct Admin page
+   - You should be able to add, edit, and delete menu items
 
 ## Troubleshooting
 
 If you encounter issues with database access:
 
-1. Check that your RLS policies are correctly set up in Supabase
-2. Verify that your admin email is correctly set in both:
-   - The Supabase `app.admin_emails` setting (if using Option 2)
-   - The `NEXT_PUBLIC_ADMIN_EMAILS` environment variable in your `.env.local` file
-3. Make sure you're signed in with the correct admin email
-4. Check the browser console for any error messages
+1. **Check Authentication**
+   - Make sure you're properly signed in
+   - Check the browser console for any authentication errors
 
-For more detailed troubleshooting, you can use the `/admin-test` page to verify your admin status. 
+2. **Verify RLS Policies**
+   - In the Supabase dashboard, go to "Authentication" > "Policies"
+   - Ensure the policies for the `menu_items` table are correctly set up
+   - Policies should allow public read access and authenticated write access
+
+3. **Check Console Logs**
+   - Open your browser's developer tools
+   - Check the console for any error messages related to Supabase operations
+
+4. **Restart the Development Server**
+   - Sometimes, restarting the development server can resolve issues
+   - Stop the server with Ctrl+C and restart it with `npm run dev`
+
+If you continue to experience issues, please refer to the Supabase documentation or contact the development team for assistance. 

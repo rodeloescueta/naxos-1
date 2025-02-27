@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, isEmailInAdminList } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { User } from '@supabase/supabase-js';
 import { 
   MenuItem, 
@@ -21,7 +21,6 @@ import { signOut } from '@/lib/auth';
 export default function DirectAdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [adminStatus, setAdminStatus] = useState(false);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isMenuItemsLoading, setIsMenuItemsLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -43,20 +42,10 @@ export default function DirectAdminPage() {
           return;
         }
         
-        // Check if the email is in the admin list
-        const isAdmin = isEmailInAdminList(currentUser.email);
-        setAdminStatus(isAdmin);
+        console.log('User authenticated:', currentUser.email);
         
-        console.log('User email:', currentUser.email);
-        console.log('Is admin:', isAdmin);
-        console.log('Admin emails:', process.env.NEXT_PUBLIC_ADMIN_EMAILS);
-        
-        if (!isAdmin) {
-          setError('You do not have admin privileges');
-        } else {
-          // Load menu items if admin
-          loadMenuItems();
-        }
+        // Load menu items for authenticated user
+        loadMenuItems();
       } catch (error) {
         console.error('Authentication error:', error);
         setError('An error occurred while checking your authentication');
@@ -169,34 +158,11 @@ export default function DirectAdminPage() {
     );
   }
 
-  if (!adminStatus) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="bg-white shadow rounded-lg p-6">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-            <p className="text-gray-700 mb-4">
-              You do not have admin privileges. Your email ({user.email}) is not in the admin list.
-            </p>
-            <div className="flex space-x-4">
-              <Button asChild variant="outline">
-                <a href="/">Go to Home</a>
-              </Button>
-              <Button onClick={handleSignOut} variant="destructive">
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-7xl">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Direct Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <Button
             variant="destructive"
             onClick={handleSignOut}
@@ -208,7 +174,7 @@ export default function DirectAdminPage() {
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Welcome, {user.email}</h2>
           <p className="text-gray-600">
-            You are accessing the admin dashboard directly, bypassing the middleware checks.
+            You have access to manage menu items and content for the Naxos restaurant website.
           </p>
         </div>
         

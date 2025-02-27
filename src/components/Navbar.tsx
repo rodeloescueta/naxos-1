@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter, usePathname } from "next/navigation";
 
 const Navbar = () => {
-  const { user, userRole, signOut, isLoading } = useAuth();
+  const { user, signOut, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   
@@ -88,10 +88,10 @@ const Navbar = () => {
               Contact
             </motion.button>
             
-            {/* Admin Link - Only visible when user is logged in and is admin */}
-            {!isLoading && user && userRole === 'admin' && (
+            {/* Admin Link - Only visible when user is logged in */}
+            {!isLoading && user && (
               <motion.button
-                onClick={() => router.push('/admin-nav')}
+                onClick={() => router.push('/direct-admin')}
                 className="text-white bg-amber-600 hover:bg-amber-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
