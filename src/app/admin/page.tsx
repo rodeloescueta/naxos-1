@@ -42,8 +42,12 @@ export default function AdminPage() {
           return;
         }
         
+        // Check if the user's email is in the admin list
         const adminCheck = await isAdmin(currentUser);
         setAdminStatus(adminCheck);
+        
+        console.log('User email:', currentUser.email);
+        console.log('Is admin:', adminCheck);
         
         // If not admin, redirect to home
         if (!adminCheck) {

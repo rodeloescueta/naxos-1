@@ -2,6 +2,16 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Function to check if an email is in the admin list
+function isEmailInAdminList(email: string | undefined | null): boolean {
+  if (!email) return false;
+  
+  const adminEmails = process.env.ADMIN_EMAILS || '';
+  const adminEmailList = adminEmails.split(',').map(e => e.trim().toLowerCase());
+  
+  return adminEmailList.includes(email.toLowerCase());
+}
+
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
@@ -22,21 +32,17 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
     
-    // Check if the user has the admin role
-    const { data: { user } } = await supabase.auth.getUser();
+    // Get the user's email
+    const userEmail = session.user?.email;
     
-    if (!user) {
-      console.log('No user found, redirecting to login');
-      const redirectUrl = new URL('/login', req.url);
-      redirectUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(redirectUrl);
-    }
+    // Check if the user's email is in the admin list
+    const isAdmin = isEmailInAdminList(userEmail);
     
-    const userRole = user.user_metadata?.role;
-    console.log('User role:', userRole);
+    console.log('User email:', userEmail);
+    console.log('Is admin:', isAdmin);
     
     // If not an admin, redirect to home page
-    if (userRole !== 'admin') {
+    if (!isAdmin) {
       console.log('User is not admin, redirecting to home');
       const redirectUrl = new URL('/', req.url);
       return NextResponse.redirect(redirectUrl);

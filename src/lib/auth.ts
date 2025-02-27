@@ -9,13 +9,23 @@ export interface UserProfile {
   role: UserRole;
 }
 
+// Function to check if an email is in the admin list
+export function isEmailInAdminList(email: string | undefined | null): boolean {
+  if (!email) return false;
+  
+  const adminEmails = process.env.ADMIN_EMAILS || '';
+  const adminEmailList = adminEmails.split(',').map(e => e.trim().toLowerCase());
+  
+  return adminEmailList.includes(email.toLowerCase());
+}
+
 export async function signUp(email: string, password: string, role: UserRole = 'user') {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
-        role,
+        role: isEmailInAdminList(email) ? 'admin' : role,
       },
     },
   });
@@ -56,11 +66,24 @@ export async function getCurrentUser(): Promise<User | null> {
 export async function getUserRole(user: User | null): Promise<UserRole | null> {
   if (!user) return null;
   
-  // The role is stored in user.user_metadata.role
+  // First check if the email is in the admin list
+  if (isEmailInAdminList(user.email)) {
+    return 'admin';
+  }
+  
+  // Fallback to checking user metadata
   return (user.user_metadata?.role as UserRole) || null;
 }
 
 export async function isAdmin(user: User | null): Promise<boolean> {
+  if (!user) return false;
+  
+  // First check if the email is in the admin list
+  if (isEmailInAdminList(user.email)) {
+    return true;
+  }
+  
+  // Fallback to checking user role in metadata
   const role = await getUserRole(user);
   return role === 'admin';
 }

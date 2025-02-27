@@ -100,6 +100,7 @@ const Navbar = () => {
                             e.preventDefault();
                             
                             if (userRole === 'admin') {
+                              console.log('User is admin, navigating to admin page');
                               router.push('/admin');
                             } else {
                               console.log('User is not admin, redirecting to login');
