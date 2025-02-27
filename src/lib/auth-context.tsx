@@ -1,81 +1,115 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
-import { getCurrentUser, signOut, isAdmin as checkIsAdmin } from './auth';
+import { User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { isAdmin } from './auth';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  isAdmin: boolean;
-  signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isLoading: true,
+  refreshUser: async () => {},
+});
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const refreshUser = async () => {
     try {
-      setIsLoading(true);
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-      setIsAdmin(checkIsAdmin(currentUser));
+      console.log('Auth context: Refreshing user data');
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        console.log('Auth context: User refreshed with email:', currentUser.email);
+        
+        // Check if user is admin
+        const adminStatus = isAdmin(currentUser);
+        console.log('Auth context: User admin status:', adminStatus);
+        
+        setUser(currentUser);
+      } else {
+        console.log('Auth context: No user found during refresh');
+        setUser(null);
+      }
     } catch (error) {
-      console.error('Error refreshing user:', error);
+      console.error('Auth context: Error refreshing user:', error);
       setUser(null);
-      setIsAdmin(false);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    refreshUser();
+    console.log('Auth context: Initializing');
     
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        setIsLoading(true);
+        console.log('Auth context: Getting initial session');
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        console.log('Auth context: Initial session exists:', !!session);
+        
+        if (session?.user) {
+          console.log('Auth context: Initial user email:', session.user.email);
+          setUser(session.user);
+          
+          // Check if user is admin
+          const adminStatus = isAdmin(session.user);
+          console.log('Auth context: Initial user admin status:', adminStatus);
+        }
+      } catch (error) {
+        console.error('Auth context: Error getting initial session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    getInitialSession();
+
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: Session | null) => {
+      async (event, session) => {
+        console.log('Auth context: Auth state changed, event:', event);
+        console.log('Auth context: Session exists:', !!session);
+        
         if (session?.user) {
+          console.log('Auth context: User email from session:', session.user.email);
           setUser(session.user);
-          setIsAdmin(checkIsAdmin(session.user));
+          
+          // Check if user is admin
+          const adminStatus = isAdmin(session.user);
+          console.log('Auth context: User admin status after state change:', adminStatus);
         } else {
           setUser(null);
-          setIsAdmin(false);
+          console.log('Auth context: No user in session after state change');
         }
+        
         setIsLoading(false);
       }
     );
 
+    // Cleanup subscription on unmount
     return () => {
+      console.log('Auth context: Cleaning up auth state subscription');
       subscription.unsubscribe();
     };
   }, []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAdmin,
-        signOut,
-        refreshUser,
-      }}
-    >
+    <AuthContext.Provider value={{ user, isLoading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-} 
+export const useAuth = () => useContext(AuthContext); 

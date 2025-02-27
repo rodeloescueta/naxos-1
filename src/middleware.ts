@@ -1,77 +1,72 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-export async function middleware(req: NextRequest) {
-  console.log('Middleware running for path:', req.nextUrl.pathname);
+// Define admin routes that require authentication and admin role
+const ADMIN_ROUTES = ['/direct-admin', '/admin'];
+
+export async function middleware(request: NextRequest) {
+  // Initialize Supabase client with environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
   
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
-  
-  // Check if the user is authenticated
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  // Get the pathname from the request
-  const { pathname } = req.nextUrl;
-  
-  console.log('Session exists:', !!session);
-  
-  // If accessing admin routes, check authentication and admin role
-  if (pathname.startsWith('/admin') || pathname === '/direct-admin') {
-    // If not authenticated, redirect to login
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Middleware: Missing Supabase environment variables');
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  const requestUrl = new URL(request.url);
+  const path = requestUrl.pathname;
+
+  console.log(`Middleware processing path: ${path}`);
+
+  // Skip middleware for non-admin routes and API routes
+  if (!ADMIN_ROUTES.some(route => path.startsWith(route)) || path.startsWith('/api')) {
+    console.log('Middleware: Not an admin route, skipping checks');
+    return NextResponse.next();
+  }
+
+  try {
+    // Get session from cookies
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    console.log(`Middleware: Session exists: ${!!session}`, sessionError ? `Error: ${sessionError.message}` : '');
+    
     if (!session) {
-      console.log('No session found, redirecting to login');
-      const redirectUrl = new URL('/login', req.url);
-      redirectUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(redirectUrl);
+      console.log('Middleware: No session found, redirecting to login');
+      return NextResponse.redirect(new URL('/login', request.url));
     }
-    
-    // Check if user is an admin by examining their email
-    const { data: { user } } = await supabase.auth.getUser();
+
+    // Get user email from session
+    const userEmail = session.user?.email;
+    console.log(`Middleware: User email: ${userEmail || 'unknown'}`);
+
+    if (!userEmail) {
+      console.log('Middleware: No user email found, redirecting to login');
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    // Check if user is admin
     const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || [];
-    const isAdmin = adminEmails.some(email => 
-      email.trim().toLowerCase() === user?.email?.toLowerCase()
-    );
+    console.log(`Middleware: Admin emails from env: ${adminEmails.join(', ')}`);
     
-    // If not an admin, redirect to home page
+    const isAdmin = adminEmails.includes(userEmail);
+    console.log(`Middleware: Is admin check for ${userEmail}: ${isAdmin}`);
+
     if (!isAdmin) {
-      console.log('User is not an admin, redirecting to home page');
-      return NextResponse.redirect(new URL('/', req.url));
+      console.log(`Middleware: User ${userEmail} is not an admin, redirecting to home`);
+      return NextResponse.redirect(new URL('/', request.url));
     }
-    
-    console.log('User is authenticated and is an admin, allowing access to admin page');
+
+    console.log(`Middleware: User ${userEmail} is admin, allowing access to ${path}`);
+    return NextResponse.next();
+  } catch (error) {
+    console.error('Middleware error:', error);
+    return NextResponse.redirect(new URL('/login', request.url));
   }
-  
-  // If accessing login or signup pages while already authenticated
-  if ((pathname === '/login' || pathname === '/signup') && session) {
-    // Check if there's a redirect parameter
-    const redirectTo = req.nextUrl.searchParams.get('redirect');
-    if (redirectTo) {
-      console.log('Redirecting authenticated user to:', redirectTo);
-      const redirectUrl = new URL(redirectTo, req.url);
-      return NextResponse.redirect(redirectUrl);
-    }
-    
-    // Check if user is an admin
-    const { data: { user } } = await supabase.auth.getUser();
-    const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || [];
-    const isAdmin = adminEmails.some(email => 
-      email.trim().toLowerCase() === user?.email?.toLowerCase()
-    );
-    
-    if (isAdmin) {
-      console.log('Redirecting admin user to direct-admin');
-      return NextResponse.redirect(new URL('/direct-admin', req.url));
-    } else {
-      console.log('Redirecting non-admin user to home page');
-      return NextResponse.redirect(new URL('/', req.url));
-    }
-  }
-  
-  return res;
 }
 
-// Specify which routes this middleware should run on
 export const config = {
-  matcher: ['/admin/:path*', '/direct-admin', '/login', '/signup'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)'],
 }; 
