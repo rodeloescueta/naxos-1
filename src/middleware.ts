@@ -16,12 +16,8 @@ export async function middleware(req: NextRequest) {
   
   console.log('Session exists:', !!session);
   
-  // If accessing admin routes, check authentication
-  if (pathname.startsWith('/admin') && 
-      !pathname.includes('/admin-test') && 
-      !pathname.includes('/admin-bypass') &&
-      !pathname.includes('/admin-nav') &&
-      !pathname.includes('/direct-admin')) {
+  // If accessing admin routes, check authentication and admin role
+  if (pathname.startsWith('/admin') || pathname === '/direct-admin') {
     // If not authenticated, redirect to login
     if (!session) {
       console.log('No session found, redirecting to login');
@@ -30,7 +26,20 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
     
-    console.log('User is authenticated, allowing access to admin page');
+    // Check if user is an admin by examining their email
+    const { data: { user } } = await supabase.auth.getUser();
+    const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || [];
+    const isAdmin = adminEmails.some(email => 
+      email.trim().toLowerCase() === user?.email?.toLowerCase()
+    );
+    
+    // If not an admin, redirect to home page
+    if (!isAdmin) {
+      console.log('User is not an admin, redirecting to home page');
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+    
+    console.log('User is authenticated and is an admin, allowing access to admin page');
   }
   
   // If accessing login or signup pages while already authenticated, redirect to direct-admin
@@ -43,9 +52,20 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
     
-    console.log('Redirecting authenticated user to direct-admin');
-    const redirectUrl = new URL('/direct-admin', req.url);
-    return NextResponse.redirect(redirectUrl);
+    // Check if user is an admin
+    const { data: { user } } = await supabase.auth.getUser();
+    const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || [];
+    const isAdmin = adminEmails.some(email => 
+      email.trim().toLowerCase() === user?.email?.toLowerCase()
+    );
+    
+    if (isAdmin) {
+      console.log('Redirecting admin user to direct-admin');
+      return NextResponse.redirect(new URL('/direct-admin', req.url));
+    } else {
+      console.log('Redirecting non-admin user to home page');
+      return NextResponse.redirect(new URL('/', req.url));
+    }
   }
   
   return res;
@@ -53,5 +73,5 @@ export async function middleware(req: NextRequest) {
 
 // Specify which routes this middleware should run on
 export const config = {
-  matcher: ['/admin/:path*', '/login', '/signup'],
+  matcher: ['/admin/:path*', '/direct-admin', '/login', '/signup'],
 }; 

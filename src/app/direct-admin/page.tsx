@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, isAdmin } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { User } from '@supabase/supabase-js';
 import { 
   MenuItem, 
@@ -17,11 +17,10 @@ import { Button } from '@/components/ui/button';
 import MenuItemForm from '@/components/admin/MenuItemForm';
 import MenuItemsTable from '@/components/admin/MenuItemsTable';
 import { signOut } from '@/lib/auth';
+import { useAuth } from '@/lib/auth-context';
 
 export default function DirectAdminPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAdminUser, setIsAdminUser] = useState(false);
+  const { user, isLoading, isAdmin, signOut: authSignOut } = useAuth();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isMenuItemsLoading, setIsMenuItemsLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -33,24 +32,16 @@ export default function DirectAdminPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        setLoading(true);
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
-        
-        if (!currentUser) {
+        if (!user) {
           console.log('No user found');
           setError('You must be logged in to access this page');
           return;
         }
         
-        // Check if the user is an admin
-        const adminCheck = isAdmin(currentUser);
-        setIsAdminUser(adminCheck);
+        console.log('User authenticated:', user.email);
+        console.log('Admin status:', isAdmin);
         
-        console.log('User authenticated:', currentUser.email);
-        console.log('Admin status:', adminCheck);
-        
-        if (!adminCheck) {
+        if (!isAdmin) {
           console.log('User is not an admin, redirecting to home');
           router.push('/');
           return;
@@ -61,13 +52,13 @@ export default function DirectAdminPage() {
       } catch (error) {
         console.error('Authentication error:', error);
         setError('An error occurred while checking your authentication');
-      } finally {
-        setLoading(false);
       }
     };
 
-    checkAuth();
-  }, [router]);
+    if (!isLoading) {
+      checkAuth();
+    }
+  }, [user, isAdmin, isLoading, router]);
 
   const loadMenuItems = async () => {
     setIsMenuItemsLoading(true);
@@ -86,7 +77,7 @@ export default function DirectAdminPage() {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await authSignOut();
       router.push('/');
       router.refresh();
     } catch (error) {
@@ -146,7 +137,7 @@ export default function DirectAdminPage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-lg">Loading...</p>
@@ -170,7 +161,7 @@ export default function DirectAdminPage() {
     );
   }
 
-  if (!isAdminUser) {
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gray-100 p-8">
         <div className="mx-auto max-w-7xl">
