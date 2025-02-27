@@ -19,20 +19,38 @@ ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access" ON menu_items
   FOR SELECT USING (true);
 
--- Allow only admins to insert menu items
+-- Allow only admin emails to insert menu items
 CREATE POLICY "Allow admin insert" ON menu_items
   FOR INSERT TO authenticated
-  USING (auth.jwt() ->> 'role' = 'admin');
+  USING (
+    -- Check if the user's email is in the admin list
+    EXISTS (
+      SELECT 1 FROM unnest(string_to_array(current_setting('app.admin_emails', true), ',')) admin_email
+      WHERE trim(admin_email) = auth.jwt() ->> 'email'
+    )
+  );
 
--- Allow only admins to update menu items
+-- Allow only admin emails to update menu items
 CREATE POLICY "Allow admin update" ON menu_items
   FOR UPDATE TO authenticated
-  USING (auth.jwt() ->> 'role' = 'admin');
+  USING (
+    -- Check if the user's email is in the admin list
+    EXISTS (
+      SELECT 1 FROM unnest(string_to_array(current_setting('app.admin_emails', true), ',')) admin_email
+      WHERE trim(admin_email) = auth.jwt() ->> 'email'
+    )
+  );
 
--- Allow only admins to delete menu items
+-- Allow only admin emails to delete menu items
 CREATE POLICY "Allow admin delete" ON menu_items
   FOR DELETE TO authenticated
-  USING (auth.jwt() ->> 'role' = 'admin');
+  USING (
+    -- Check if the user's email is in the admin list
+    EXISTS (
+      SELECT 1 FROM unnest(string_to_array(current_setting('app.admin_emails', true), ',')) admin_email
+      WHERE trim(admin_email) = auth.jwt() ->> 'email'
+    )
+  );
 
 -- Create a function to update the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -70,28 +88,56 @@ ALTER TABLE blogs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access to published blogs" ON blogs
   FOR SELECT USING (published = true);
 
--- Allow admins to read all blogs
+-- Allow admin emails to read all blogs
 CREATE POLICY "Allow admin read access to all blogs" ON blogs
   FOR SELECT TO authenticated
-  USING (auth.jwt() ->> 'role' = 'admin');
+  USING (
+    -- Check if the user's email is in the admin list
+    EXISTS (
+      SELECT 1 FROM unnest(string_to_array(current_setting('app.admin_emails', true), ',')) admin_email
+      WHERE trim(admin_email) = auth.jwt() ->> 'email'
+    )
+  );
 
--- Allow only admins to insert blogs
+-- Allow only admin emails to insert blogs
 CREATE POLICY "Allow admin insert blogs" ON blogs
   FOR INSERT TO authenticated
-  USING (auth.jwt() ->> 'role' = 'admin');
+  USING (
+    -- Check if the user's email is in the admin list
+    EXISTS (
+      SELECT 1 FROM unnest(string_to_array(current_setting('app.admin_emails', true), ',')) admin_email
+      WHERE trim(admin_email) = auth.jwt() ->> 'email'
+    )
+  );
 
--- Allow only admins to update blogs
+-- Allow only admin emails to update blogs
 CREATE POLICY "Allow admin update blogs" ON blogs
   FOR UPDATE TO authenticated
-  USING (auth.jwt() ->> 'role' = 'admin');
+  USING (
+    -- Check if the user's email is in the admin list
+    EXISTS (
+      SELECT 1 FROM unnest(string_to_array(current_setting('app.admin_emails', true), ',')) admin_email
+      WHERE trim(admin_email) = auth.jwt() ->> 'email'
+    )
+  );
 
--- Allow only admins to delete blogs
+-- Allow only admin emails to delete blogs
 CREATE POLICY "Allow admin delete blogs" ON blogs
   FOR DELETE TO authenticated
-  USING (auth.jwt() ->> 'role' = 'admin');
+  USING (
+    -- Check if the user's email is in the admin list
+    EXISTS (
+      SELECT 1 FROM unnest(string_to_array(current_setting('app.admin_emails', true), ',')) admin_email
+      WHERE trim(admin_email) = auth.jwt() ->> 'email'
+    )
+  );
 
 -- Create a trigger to automatically update the updated_at column for blogs
 CREATE TRIGGER update_blogs_updated_at
 BEFORE UPDATE ON blogs
 FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column(); 
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Set the admin emails from environment variable
+-- This needs to be run after setting the environment variable in Supabase
+ALTER SYSTEM SET app.admin_emails = 'admin@example.com'; 

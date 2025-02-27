@@ -4,11 +4,18 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 const Navbar = () => {
   const { user, userRole, signOut, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  
+  // Only show auth buttons on admin pages or when user is logged in
+  const showAuthButtons = pathname.includes('/admin') || 
+                          pathname.includes('/login') || 
+                          pathname.includes('/signup') || 
+                          user !== null;
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -80,29 +87,26 @@ const Navbar = () => {
             >
               Contact
             </motion.button>
+            
+            {/* Admin Link - Only visible when user is logged in and is admin */}
+            {!isLoading && user && userRole === 'admin' && (
+              <motion.button
+                onClick={() => router.push('/admin-nav')}
+                className="text-white bg-amber-600 hover:bg-amber-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Admin
+              </motion.button>
+            )}
           </div>
 
-          {/* Auth Actions */}
-          <div className="flex items-center space-x-4">
-            {!isLoading && (
-              <>
-                {user ? (
-                  <div className="flex items-center space-x-4">
-                    {userRole === 'admin' && (
-                      <>
-                        <motion.div
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Link 
-                            href="/admin-nav" 
-                            className="text-white bg-amber-600 hover:bg-amber-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
-                          >
-                            Admin
-                          </Link>
-                        </motion.div>
-                      </>
-                    )}
+          {/* Auth Actions - Only shown on admin pages or when logged in */}
+          {showAuthButtons && (
+            <div className="flex items-center space-x-4">
+              {!isLoading && (
+                <>
+                  {user ? (
                     <motion.button
                       onClick={handleSignOut}
                       className="text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
@@ -111,23 +115,23 @@ const Navbar = () => {
                     >
                       Sign Out
                     </motion.button>
-                  </div>
-                ) : (
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Link 
-                      href="/login" 
-                      className="text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                  ) : (
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      Sign In
-                    </Link>
-                  </motion.div>
-                )}
-              </>
-            )}
-          </div>
+                      <Link 
+                        href="/login" 
+                        className="text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                      >
+                        Sign In
+                      </Link>
+                    </motion.div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </motion.nav>
