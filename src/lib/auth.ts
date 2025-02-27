@@ -1,14 +1,6 @@
 import { supabase } from './supabase';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 
-export type UserRole = 'admin' | 'user';
-
-export interface UserProfile {
-  id: string;
-  email: string;
-  role: UserRole;
-}
-
 export interface AuthResult {
   session: Session | null;
   user: User | null;
@@ -17,8 +9,8 @@ export interface AuthResult {
 
 // Check if user is an admin by examining their email
 export function isAdmin(user: User | null): boolean {
-  if (!user) {
-    console.log('Auth: isAdmin check - No user provided');
+  if (!user || !user.email) {
+    console.log('Auth: isAdmin check - No user or email provided');
     return false;
   }
   
@@ -26,7 +18,7 @@ export function isAdmin(user: User | null): boolean {
   console.log('Auth: Admin emails from env:', adminEmails);
   console.log('Auth: Checking if user email is admin:', user.email);
   
-  const isAdminUser = adminEmails.includes(user.email || '');
+  const isAdminUser = adminEmails.includes(user.email);
   console.log('Auth: isAdmin check result:', isAdminUser);
   
   return isAdminUser;
@@ -138,17 +130,12 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
-export async function getUserRole(): Promise<'admin' | 'user'> {
-  const user = await getCurrentUser();
-  return isAdmin(user) ? 'admin' : 'user';
-}
-
 export async function getSession() {
-  const { data, error } = await supabase.auth.getSession();
-  
-  if (error) {
-    throw error;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+  } catch (error) {
+    console.error('Auth: Error getting session:', error);
+    return null;
   }
-  
-  return data.session;
 } 

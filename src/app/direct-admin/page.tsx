@@ -3,74 +3,84 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { adminGetAllMenuItems, createMenuItem, updateMenuItem, deleteMenuItem, MenuItem, CreateMenuItemData } from '@/lib/menu-items';
-import { signOut, isAdmin } from '@/lib/auth';
+import { 
+  getMenuItems, 
+  createMenuItem, 
+  updateMenuItem, 
+  deleteMenuItem, 
+  MenuItem,
+  CreateMenuItemData
+} from '@/lib/menu-items';
 
-export default function DirectAdminPage() {
+export default function AdminPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState<CreateMenuItemData>({
+  const [formData, setFormData] = useState<{
+    id: string;
+    title: string;
+    description: string;
+    price: string;
+    photo_url: string;
+  }>({
+    id: '',
     title: '',
     description: '',
-    price: 0,
-    image_url: '',
-    category: '',
-    is_featured: false,
+    price: '',
+    photo_url: '',
   });
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
   const [authChecked, setAuthChecked] = useState(false);
-  const { user, refreshUser } = useAuth();
+  
   const router = useRouter();
+  const { user, isAdmin, isLoading, signOut, refreshUser } = useAuth();
 
   // Check authentication and admin status
   useEffect(() => {
     const checkAuth = async () => {
-      console.log('Admin page: Checking authentication and admin status');
+      console.log('Admin page: Checking authentication');
       
-      if (!user) {
-        console.log('Admin page: No user found, attempting to refresh user data');
-        await refreshUser();
+      if (isLoading) {
+        console.log('Admin page: Auth is still loading');
+        return;
       }
       
+      // If no user is found, redirect to login
       if (!user) {
-        console.log('Admin page: Still no user after refresh, redirecting to login');
+        console.log('Admin page: No user found, redirecting to login');
         router.push('/login');
         return;
       }
       
       console.log('Admin page: User authenticated with email:', user.email);
       
-      // Check if user is admin
-      const adminStatus = isAdmin(user);
-      console.log('Admin page: User admin status:', adminStatus);
-      
-      if (!adminStatus) {
+      // If user is not an admin, redirect to home
+      if (!isAdmin) {
         console.log('Admin page: User is not an admin, redirecting to home');
+        setStatusMessage('You do not have admin privileges');
         router.push('/');
         return;
       }
       
-      console.log('Admin page: User is admin, loading menu items');
-      loadMenuItems();
+      console.log('Admin page: User is admin, access granted');
       setAuthChecked(true);
+      loadMenuItems();
     };
     
     checkAuth();
-  }, [user, router, refreshUser]);
+  }, [user, isAdmin, isLoading, router, refreshUser]);
 
   const loadMenuItems = async () => {
     try {
-      setLoading(true);
       console.log('Admin page: Loading menu items');
-      const items = await adminGetAllMenuItems();
+      setLoading(true);
+      const items = await getMenuItems();
       console.log(`Admin page: Loaded ${items.length} menu items`);
       setMenuItems(items);
-      setError(null);
-    } catch (err) {
-      console.error('Admin page: Error loading menu items:', err);
-      setError('Failed to load menu items. Please try again.');
+      setStatusMessage('');
+    } catch (error) {
+      console.error('Admin page: Error loading menu items:', error);
+      setStatusMessage('Failed to load menu items');
     } finally {
       setLoading(false);
     }
@@ -78,353 +88,271 @@ export default function DirectAdminPage() {
 
   const handleSignOut = async () => {
     try {
-      console.log('Admin page: Signing out user');
+      console.log('Admin page: Signing out');
       await signOut();
-      console.log('Admin page: User signed out successfully, redirecting to login');
       router.push('/login');
-    } catch (err) {
-      console.error('Admin page: Error signing out:', err);
-      setError('Failed to sign out. Please try again.');
+    } catch (error) {
+      console.error('Admin page: Error signing out:', error);
+      setStatusMessage('Failed to sign out');
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
-    } else if (name === 'price') {
-      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const resetForm = () => {
+    setFormData({
+      id: '',
+      title: '',
+      description: '',
+      price: '',
+      photo_url: '',
+    });
+    setIsEditing(false);
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
     
     try {
-      if (editingItem) {
-        console.log('Admin page: Updating menu item:', editingItem.id);
-        const updatedItem = await updateMenuItem(editingItem.id, formData);
-        console.log('Admin page: Menu item updated successfully:', updatedItem.id);
-        setSuccess(`Menu item "${updatedItem.title}" updated successfully!`);
-        setEditingItem(null);
-      } else {
-        console.log('Admin page: Creating new menu item:', formData.title);
-        const newItem = await createMenuItem(formData);
-        console.log('Admin page: Menu item created successfully:', newItem.id);
-        setSuccess(`Menu item "${newItem.title}" created successfully!`);
+      setStatusMessage('Saving...');
+      
+      // Validate form data
+      if (!formData.title || !formData.description || !formData.price) {
+        setStatusMessage('Please fill in all required fields');
+        return;
       }
       
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        price: 0,
-        image_url: '',
-        category: '',
-        is_featured: false,
-      });
+      // Convert price to number
+      const priceValue = parseFloat(formData.price);
+      if (isNaN(priceValue)) {
+        setStatusMessage('Price must be a valid number');
+        return;
+      }
       
-      // Reload menu items
+      const itemData: CreateMenuItemData = {
+        title: formData.title,
+        description: formData.description,
+        price: priceValue,
+        photo_url: formData.photo_url || undefined,
+      };
+      
+      if (isEditing) {
+        console.log('Admin page: Updating menu item with ID:', formData.id);
+        await updateMenuItem(formData.id, itemData);
+        console.log('Admin page: Menu item updated successfully');
+        setStatusMessage('Menu item updated successfully');
+      } else {
+        console.log('Admin page: Creating new menu item');
+        await createMenuItem(itemData);
+        console.log('Admin page: Menu item created successfully');
+        setStatusMessage('Menu item created successfully');
+      }
+      
+      resetForm();
       loadMenuItems();
-    } catch (err) {
-      console.error('Admin page: Error saving menu item:', err);
-      setError('Failed to save menu item. Please try again.');
+    } catch (error) {
+      console.error('Admin page: Error saving menu item:', error);
+      setStatusMessage('Failed to save menu item');
     }
   };
 
   const handleEditItem = (item: MenuItem) => {
-    console.log('Admin page: Editing menu item:', item.id);
-    setEditingItem(item);
+    console.log('Admin page: Editing menu item with ID:', item.id);
     setFormData({
+      id: item.id,
       title: item.title,
-      description: item.description || '',
-      price: item.price,
-      image_url: item.image_url || '',
-      category: item.category || '',
-      is_featured: item.is_featured,
+      description: item.description,
+      price: item.price.toString(),
+      photo_url: item.photo_url || '',
     });
-    setError(null);
-    setSuccess(null);
+    setIsEditing(true);
+    setStatusMessage('');
   };
 
-  const handleCancelEdit = () => {
-    console.log('Admin page: Canceling edit');
-    setEditingItem(null);
-    setFormData({
-      title: '',
-      description: '',
-      price: 0,
-      image_url: '',
-      category: '',
-      is_featured: false,
-    });
-  };
-
-  const handleDeleteItem = async (id: string, title: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${title}"?`)) {
+  const handleDeleteItem = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this item?')) {
       return;
     }
     
     try {
-      console.log('Admin page: Deleting menu item:', id);
+      console.log('Admin page: Deleting menu item with ID:', id);
+      setStatusMessage('Deleting...');
       await deleteMenuItem(id);
       console.log('Admin page: Menu item deleted successfully');
-      setSuccess(`Menu item "${title}" deleted successfully!`);
+      setStatusMessage('Menu item deleted successfully');
       loadMenuItems();
-    } catch (err) {
-      console.error('Admin page: Error deleting menu item:', err);
-      setError('Failed to delete menu item. Please try again.');
+    } catch (error) {
+      console.error('Admin page: Error deleting menu item:', error);
+      setStatusMessage('Failed to delete menu item');
     }
   };
 
-  if (!authChecked) {
+  // Show loading state while checking authentication
+  if (isLoading || !authChecked) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="w-full max-w-md space-y-8 text-center">
-          <h2 className="text-2xl font-bold">Checking authentication...</h2>
-          <p>Please wait while we verify your access.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="w-full max-w-md space-y-8 text-center">
-          <h2 className="text-2xl font-bold text-red-600">Access Denied</h2>
-          <p>You need to be logged in to access this page.</p>
-          <div className="mt-4">
-            <button
-              onClick={() => router.push('/login')}
-              className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-            >
-              Go to Login
-            </button>
-          </div>
+      <div className="flex min-h-screen flex-col items-center justify-center p-24">
+        <div className="text-center">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-6">
+            Loading...
+          </h1>
+          <p className="text-sm text-gray-600">
+            Checking authentication and loading data
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Admin Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Logged in as: {user.email}</span>
-            <button
-              onClick={handleSignOut}
-              className="rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
-            >
-              Sign Out
-            </button>
-          </div>
+    <div className="flex min-h-screen flex-col p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-extrabold tracking-tight">Admin Dashboard</h1>
+        <button
+          onClick={handleSignOut}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        >
+          Sign Out
+        </button>
+      </div>
+
+      {statusMessage && (
+        <div className={`p-4 mb-6 rounded ${statusMessage.includes('Failed') || statusMessage.includes('Error') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+          {statusMessage}
         </div>
-      </header>
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          {/* Form Section */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingItem ? `Edit Menu Item: ${editingItem.title}` : 'Add New Menu Item'}
-            </h2>
-            
-            {error && (
-              <div className="mb-4 rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-red-800">{error}</p>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
+          <h2 className="text-2xl font-bold mb-4">{isEditing ? 'Edit Menu Item' : 'Add New Menu Item'}</h2>
+          <form onSubmit={handleFormSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                Title *
+              </label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Description *
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                required
+                rows={3}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+                Price *
+              </label>
+              <input
+                type="number"
+                id="price"
+                name="price"
+                value={formData.price}
+                onChange={handleInputChange}
+                required
+                step="0.01"
+                min="0"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="photo_url" className="block text-sm font-medium text-gray-700">
+                Photo URL
+              </label>
+              <input
+                type="url"
+                id="photo_url"
+                name="photo_url"
+                value={formData.photo_url}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="flex space-x-4">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+              >
+                {isEditing ? 'Update Item' : 'Add Item'}
+              </button>
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Menu Items</h2>
+          {loading ? (
+            <p>Loading menu items...</p>
+          ) : menuItems.length === 0 ? (
+            <p>No menu items found.</p>
+          ) : (
+            <div className="space-y-4">
+              {menuItems.map((item) => (
+                <div key={item.id} className="border rounded-lg p-4 bg-white shadow">
+                  <div className="flex justify-between">
+                    <h3 className="text-lg font-semibold">{item.title}</h3>
+                    <span className="font-bold">${item.price.toFixed(2)}</span>
                   </div>
-                </div>
-              </div>
-            )}
-            
-            {success && (
-              <div className="mb-4 rounded-md bg-green-50 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-green-800">{success}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <form onSubmit={handleFormSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    id="title"
-                    required
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    id="description"
-                    rows={3}
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                    Price
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    id="price"
-                    required
-                    min="0"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="image_url" className="block text-sm font-medium text-gray-700">
-                    Image URL
-                  </label>
-                  <input
-                    type="text"
-                    name="image_url"
-                    id="image_url"
-                    value={formData.image_url}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                    Category
-                  </label>
-                  <select
-                    name="category"
-                    id="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
-                  >
-                    <option value="">Select a category</option>
-                    <option value="appetizer">Appetizer</option>
-                    <option value="main">Main Course</option>
-                    <option value="dessert">Dessert</option>
-                    <option value="drink">Drink</option>
-                  </select>
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="is_featured"
-                    id="is_featured"
-                    checked={formData.is_featured}
-                    onChange={handleInputChange}
-                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <label htmlFor="is_featured" className="ml-2 block text-sm text-gray-700">
-                    Featured Item
-                  </label>
-                </div>
-                
-                <div className="flex justify-end space-x-3">
-                  {editingItem && (
-                    <button
-                      type="button"
-                      onClick={handleCancelEdit}
-                      className="inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                      Cancel
-                    </button>
+                  <p className="text-gray-600 mt-2">{item.description}</p>
+                  {item.photo_url && (
+                    <div className="mt-2">
+                      <img
+                        src={item.photo_url}
+                        alt={item.title}
+                        className="h-40 w-full object-cover rounded"
+                      />
+                    </div>
                   )}
-                  <button
-                    type="submit"
-                    className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                  >
-                    {editingItem ? 'Update Item' : 'Add Item'}
-                  </button>
+                  <div className="flex space-x-2 mt-4">
+                    <button
+                      onClick={() => handleEditItem(item)}
+                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </form>
-          </div>
-          
-          {/* Menu Items List */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Menu Items</h2>
-            
-            {loading ? (
-              <p>Loading menu items...</p>
-            ) : menuItems.length === 0 ? (
-              <p>No menu items found. Add your first item!</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">Title</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Price</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Category</th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Featured</th>
-                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                        <span className="sr-only">Actions</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {menuItems.map((item) => (
-                      <tr key={item.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{item.title}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">${item.price.toFixed(2)}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.category || 'N/A'}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.is_featured ? 'Yes' : 'No'}</td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                          <button
-                            onClick={() => handleEditItem(item)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-4"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item.id, item.title)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 } 

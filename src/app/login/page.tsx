@@ -2,185 +2,132 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { signIn, isAdmin, AuthResult } from '@/lib/auth';
-import { supabase } from '@/lib/supabase';
-import { User } from '@supabase/supabase-js';
+import { signIn } from '@/lib/auth';
+import { useAuth } from '@/lib/auth-context';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { user, isAdmin, refreshUser } = useAuth();
 
-  // Check if user is already logged in
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        setStatusMessage('Checking current session...');
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          const userEmail = session.user?.email;
-          console.log('Login page: User already logged in with email:', userEmail);
-          
-          // Check if user is admin
-          const adminStatus = isAdmin(session.user);
-          console.log('Login page: User admin status:', adminStatus);
-          
-          if (adminStatus) {
-            console.log('Login page: Redirecting admin user to admin dashboard');
-            setStatusMessage('You are logged in as admin. Redirecting to admin dashboard...');
-            router.push('/direct-admin');
-          } else {
-            console.log('Login page: Redirecting non-admin user to home page');
-            setStatusMessage('You are logged in. Redirecting to home page...');
-            router.push('/');
-          }
-        } else {
-          console.log('Login page: No active session found');
-          setStatusMessage(null);
-        }
-      } catch (error) {
-        console.error('Login page: Error checking session:', error);
-        setStatusMessage(null);
+    // Check if user is already logged in
+    if (user) {
+      console.log('Login page: User already logged in:', user.email);
+      console.log('Login page: User is admin:', isAdmin);
+      
+      if (isAdmin) {
+        console.log('Login page: Redirecting to admin page');
+        router.push('/direct-admin');
+      } else {
+        console.log('Login page: Redirecting to home page');
+        router.push('/');
       }
-    };
-    
-    checkSession();
-  }, [router]);
+    }
+  }, [user, isAdmin, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setStatusMessage('Attempting to sign in...');
+    setIsLoading(true);
+    setStatusMessage('Signing in...');
 
     try {
       console.log('Login page: Attempting to sign in with email:', email);
-      const result: AuthResult = await signIn(email, password);
+      const { user, error } = await signIn(email, password);
 
-      if (result.error) {
-        console.error('Login page: Sign in error:', result.error.message);
-        setError(result.error.message);
-        setStatusMessage(null);
+      if (error) {
+        console.error('Login page: Sign in error:', error.message);
+        setStatusMessage(`Error: ${error.message}`);
         return;
       }
 
-      const { session, user } = result;
-
-      if (!session || !user) {
-        console.error('Login page: No session or user returned after sign in');
-        setError('Authentication failed. Please try again.');
-        setStatusMessage(null);
+      if (!user) {
+        console.error('Login page: No user returned after sign in');
+        setStatusMessage('Error: Failed to sign in');
         return;
       }
 
       console.log('Login page: Sign in successful for user:', user.email);
-      setStatusMessage('Sign in successful! Checking admin status...');
-
-      // Check if user is admin
-      const adminStatus = isAdmin(user);
-      console.log('Login page: User admin status after login:', adminStatus);
-
-      if (adminStatus) {
-        console.log('Login page: Redirecting admin user to admin dashboard');
-        setStatusMessage('You are logged in as admin. Redirecting to admin dashboard...');
+      setStatusMessage('Sign in successful! Redirecting...');
+      
+      // Refresh user data to ensure we have the latest info
+      await refreshUser();
+      
+      // Check if user is admin and redirect accordingly
+      if (isAdmin) {
+        console.log('Login page: User is admin, redirecting to admin page');
         router.push('/direct-admin');
       } else {
-        console.log('Login page: Redirecting non-admin user to home page');
-        setStatusMessage('You are logged in. Redirecting to home page...');
+        console.log('Login page: User is not admin, redirecting to home page');
         router.push('/');
       }
-    } catch (err) {
-      console.error('Login page: Unexpected error during sign in:', err);
-      setError('An unexpected error occurred. Please try again.');
-      setStatusMessage(null);
+    } catch (error) {
+      console.error('Login page: Unexpected error during sign in:', error);
+      setStatusMessage('An unexpected error occurred');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
-      <div className="w-full max-w-md space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
-              create a new account
-            </Link>
+    <div className="flex min-h-screen flex-col items-center justify-center p-24">
+      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
+        <div className="text-center">
+          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-6">
+            Login
+          </h1>
+          <p className="text-sm text-gray-600 mb-8">
+            Sign in to access your account
           </p>
         </div>
-        
-        {statusMessage && (
-          <div className="rounded-md bg-blue-50 p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm font-medium text-blue-800">{statusMessage}</p>
-              </div>
-            </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
           </div>
-        )}
-        
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm font-medium text-red-800">{error}</p>
-              </div>
-            </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
           </div>
-        )}
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="-space-y-px rounded-md shadow-sm">
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="relative block w-full rounded-t-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 px-3"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+
+          {statusMessage && (
+            <div className={`text-sm ${statusMessage.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+              {statusMessage}
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="relative block w-full rounded-b-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 px-3"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
+          )}
 
           <div>
             <button
               type="submit"
-              disabled={loading}
-              className="group relative flex w-full justify-center rounded-md bg-indigo-600 py-2 px-3 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:bg-indigo-400"
+              disabled={isLoading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
         </form>

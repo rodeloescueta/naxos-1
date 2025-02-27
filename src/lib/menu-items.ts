@@ -3,22 +3,17 @@ import { supabase } from './supabase';
 export interface MenuItem {
   id: string;
   title: string;
-  description: string | null;
+  description: string;
   price: number;
-  image_url: string | null;
-  category: string | null;
-  is_featured: boolean;
+  photo_url: string | null;
   created_at: string;
-  updated_at: string;
 }
 
 export interface CreateMenuItemData {
   title: string;
-  description?: string;
+  description: string;
   price: number;
-  image_url?: string;
-  category?: string;
-  is_featured?: boolean;
+  photo_url?: string;
 }
 
 export interface UpdateMenuItemData {
@@ -30,91 +25,126 @@ export interface UpdateMenuItemData {
   is_featured?: boolean;
 }
 
-// Get all menu items - public access
+// Get all menu items (public)
 export async function getMenuItems(): Promise<MenuItem[]> {
-  console.log('Fetching all menu items');
-  const { data, error } = await supabase
-    .from('menu_items')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching menu items:', error);
+  console.log('Menu items: Fetching all menu items');
+  
+  try {
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Menu items: Error fetching menu items:', error.message);
+      throw error;
+    }
+    
+    console.log(`Menu items: Successfully fetched ${data.length} menu items`);
+    return data as MenuItem[];
+  } catch (error) {
+    console.error('Menu items: Unexpected error fetching menu items:', error);
     throw error;
   }
-
-  console.log(`Retrieved ${data?.length || 0} menu items`);
-  return data || [];
 }
 
-// Get a single menu item by ID - public access
+// Get a single menu item by ID (public)
 export async function getMenuItem(id: string): Promise<MenuItem | null> {
-  console.log(`Fetching menu item with ID: ${id}`);
-  const { data, error } = await supabase
-    .from('menu_items')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    console.error(`Error fetching menu item with ID ${id}:`, error);
+  console.log(`Menu items: Fetching menu item with ID: ${id}`);
+  
+  try {
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log(`Menu items: No menu item found with ID: ${id}`);
+        return null;
+      }
+      console.error(`Menu items: Error fetching menu item with ID ${id}:`, error.message);
+      throw error;
+    }
+    
+    console.log(`Menu items: Successfully fetched menu item with ID: ${id}`);
+    return data as MenuItem;
+  } catch (error) {
+    console.error(`Menu items: Unexpected error fetching menu item with ID ${id}:`, error);
     throw error;
   }
-
-  return data;
 }
 
-// Create a new menu item (requires authentication)
-export async function createMenuItem(menuItem: CreateMenuItemData): Promise<MenuItem> {
-  console.log('Creating new menu item:', menuItem.title);
-  const { data, error } = await supabase
-    .from('menu_items')
-    .insert([menuItem])
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating menu item:', error);
+// Create a new menu item (authenticated users only)
+export async function createMenuItem(data: CreateMenuItemData): Promise<MenuItem> {
+  console.log('Menu items: Creating new menu item:', data.title);
+  
+  try {
+    const { data: newItem, error } = await supabase
+      .from('menu_items')
+      .insert([data])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Menu items: Error creating menu item:', error.message);
+      throw error;
+    }
+    
+    console.log('Menu items: Successfully created menu item with ID:', newItem.id);
+    return newItem as MenuItem;
+  } catch (error) {
+    console.error('Menu items: Unexpected error creating menu item:', error);
     throw error;
   }
-
-  console.log('Menu item created successfully with ID:', data.id);
-  return data;
 }
 
-// Update a menu item (requires authentication)
-export async function updateMenuItem(id: string, updates: UpdateMenuItemData): Promise<MenuItem> {
-  console.log(`Updating menu item with ID: ${id}`, updates);
-  const { data, error } = await supabase
-    .from('menu_items')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    console.error(`Error updating menu item with ID ${id}:`, error);
+// Update an existing menu item (authenticated users only)
+export async function updateMenuItem(id: string, data: Partial<CreateMenuItemData>): Promise<MenuItem> {
+  console.log(`Menu items: Updating menu item with ID: ${id}`);
+  
+  try {
+    const { data: updatedItem, error } = await supabase
+      .from('menu_items')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error(`Menu items: Error updating menu item with ID ${id}:`, error.message);
+      throw error;
+    }
+    
+    console.log(`Menu items: Successfully updated menu item with ID: ${id}`);
+    return updatedItem as MenuItem;
+  } catch (error) {
+    console.error(`Menu items: Unexpected error updating menu item with ID ${id}:`, error);
     throw error;
   }
-
-  console.log('Menu item updated successfully');
-  return data;
 }
 
-// Delete a menu item (requires authentication)
+// Delete a menu item (authenticated users only)
 export async function deleteMenuItem(id: string): Promise<void> {
-  console.log(`Deleting menu item with ID: ${id}`);
-  const { error } = await supabase
-    .from('menu_items')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    console.error(`Error deleting menu item with ID ${id}:`, error);
+  console.log(`Menu items: Deleting menu item with ID: ${id}`);
+  
+  try {
+    const { error } = await supabase
+      .from('menu_items')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error(`Menu items: Error deleting menu item with ID ${id}:`, error.message);
+      throw error;
+    }
+    
+    console.log(`Menu items: Successfully deleted menu item with ID: ${id}`);
+  } catch (error) {
+    console.error(`Menu items: Unexpected error deleting menu item with ID ${id}:`, error);
     throw error;
   }
-
-  console.log('Menu item deleted successfully');
 }
 
 // Get featured menu items - public access
