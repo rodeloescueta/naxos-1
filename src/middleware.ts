@@ -6,13 +6,20 @@ import type { NextRequest } from 'next/server';
 function isEmailInAdminList(email: string | undefined | null): boolean {
   if (!email) return false;
   
-  const adminEmails = process.env.ADMIN_EMAILS || '';
+  const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS || '';
+  console.log('Middleware - Admin emails from env:', adminEmails);
   const adminEmailList = adminEmails.split(',').map(e => e.trim().toLowerCase());
+  console.log('Middleware - Admin email list:', adminEmailList);
+  console.log('Middleware - Checking email:', email?.toLowerCase());
   
-  return adminEmailList.includes(email.toLowerCase());
+  const isAdmin = adminEmailList.includes(email.toLowerCase());
+  console.log('Middleware - Is admin result:', isAdmin);
+  return isAdmin;
 }
 
 export async function middleware(req: NextRequest) {
+  console.log('Middleware running for path:', req.nextUrl.pathname);
+  
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
   
@@ -22,8 +29,13 @@ export async function middleware(req: NextRequest) {
   // Get the pathname from the request
   const { pathname } = req.nextUrl;
   
+  console.log('Session exists:', !!session);
+  
   // If accessing admin routes, check authentication and role
-  if (pathname.startsWith('/admin')) {
+  if (pathname.startsWith('/admin') && 
+      !pathname.includes('/admin-test') && 
+      !pathname.includes('/admin-bypass') &&
+      !pathname.includes('/admin-nav')) {
     // If not authenticated, redirect to login
     if (!session) {
       console.log('No session found, redirecting to login');
@@ -34,12 +46,12 @@ export async function middleware(req: NextRequest) {
     
     // Get the user's email
     const userEmail = session.user?.email;
+    console.log('User email from session:', userEmail);
     
     // Check if the user's email is in the admin list
     const isAdmin = isEmailInAdminList(userEmail);
     
-    console.log('User email:', userEmail);
-    console.log('Is admin:', isAdmin);
+    console.log('Final admin check result:', isAdmin);
     
     // If not an admin, redirect to home page
     if (!isAdmin) {
@@ -56,10 +68,12 @@ export async function middleware(req: NextRequest) {
     // Check if there's a redirect parameter
     const redirectTo = req.nextUrl.searchParams.get('redirect');
     if (redirectTo) {
+      console.log('Redirecting authenticated user to:', redirectTo);
       const redirectUrl = new URL(redirectTo, req.url);
       return NextResponse.redirect(redirectUrl);
     }
     
+    console.log('Redirecting authenticated user to home');
     const redirectUrl = new URL('/', req.url);
     return NextResponse.redirect(redirectUrl);
   }

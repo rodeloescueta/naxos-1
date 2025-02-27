@@ -13,8 +13,11 @@ export interface UserProfile {
 export function isEmailInAdminList(email: string | undefined | null): boolean {
   if (!email) return false;
   
-  const adminEmails = process.env.ADMIN_EMAILS || '';
+  const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS || '';
+  console.log('Admin emails from env:', adminEmails);
   const adminEmailList = adminEmails.split(',').map(e => e.trim().toLowerCase());
+  console.log('Admin email list:', adminEmailList);
+  console.log('Checking email:', email.toLowerCase());
   
   return adminEmailList.includes(email.toLowerCase());
 }

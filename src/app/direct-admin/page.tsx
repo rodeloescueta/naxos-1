@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, isAdmin, signOut, isEmailInAdminList } from '@/lib/auth';
+import { getCurrentUser, isEmailInAdminList } from '@/lib/auth';
 import { User } from '@supabase/supabase-js';
 import { 
   MenuItem, 
@@ -16,8 +16,9 @@ import {
 import { Button } from '@/components/ui/button';
 import MenuItemForm from '@/components/admin/MenuItemForm';
 import MenuItemsTable from '@/components/admin/MenuItemsTable';
+import { signOut } from '@/lib/auth';
 
-export default function AdminPage() {
+export default function DirectAdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [adminStatus, setAdminStatus] = useState(false);
@@ -37,46 +38,35 @@ export default function AdminPage() {
         setUser(currentUser);
         
         if (!currentUser) {
-          console.log('No user found, redirecting to login');
-          router.push('/login?redirect=/admin');
+          console.log('No user found');
+          setError('You must be logged in to access this page');
           return;
         }
         
-        // First check directly if the email is in the admin list
-        const directAdminCheck = isEmailInAdminList(currentUser.email);
-        console.log('Direct admin check result:', directAdminCheck);
-        
-        // Also check using the async isAdmin function
-        const adminCheck = await isAdmin(currentUser);
-        console.log('Async admin check result:', adminCheck);
-        
-        // Use either check - if either returns true, user is admin
-        const isUserAdmin = directAdminCheck || adminCheck;
-        setAdminStatus(isUserAdmin);
+        // Check if the email is in the admin list
+        const isAdmin = isEmailInAdminList(currentUser.email);
+        setAdminStatus(isAdmin);
         
         console.log('User email:', currentUser.email);
-        console.log('Final admin status:', isUserAdmin);
-        console.log('Admin emails from env:', process.env.NEXT_PUBLIC_ADMIN_EMAILS);
+        console.log('Is admin:', isAdmin);
+        console.log('Admin emails:', process.env.NEXT_PUBLIC_ADMIN_EMAILS);
         
-        // If not admin, redirect to home
-        if (!isUserAdmin) {
-          console.log('User is not admin, redirecting to home');
-          router.push('/');
+        if (!isAdmin) {
+          setError('You do not have admin privileges');
         } else {
-          console.log('User is admin, loading menu items');
           // Load menu items if admin
           loadMenuItems();
         }
       } catch (error) {
         console.error('Authentication error:', error);
-        router.push('/login?redirect=/admin');
+        setError('An error occurred while checking your authentication');
       } finally {
         setLoading(false);
       }
     };
 
     checkAuth();
-  }, [router]);
+  }, []);
 
   const loadMenuItems = async () => {
     setIsMenuItemsLoading(true);
@@ -163,15 +153,50 @@ export default function AdminPage() {
     );
   }
 
-  if (!user || !adminStatus) {
-    return null; // Will be redirected by the useEffect
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="bg-white shadow rounded-lg p-6">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Authentication Error</h1>
+            <p className="text-gray-700 mb-4">{error || 'You must be logged in to access this page'}</p>
+            <Button asChild>
+              <a href="/login?redirect=/direct-admin">Sign In</a>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!adminStatus) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="bg-white shadow rounded-lg p-6">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+            <p className="text-gray-700 mb-4">
+              You do not have admin privileges. Your email ({user.email}) is not in the admin list.
+            </p>
+            <div className="flex space-x-4">
+              <Button asChild variant="outline">
+                <a href="/">Go to Home</a>
+              </Button>
+              <Button onClick={handleSignOut} variant="destructive">
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-7xl">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Direct Admin Dashboard</h1>
           <Button
             variant="destructive"
             onClick={handleSignOut}
@@ -183,7 +208,7 @@ export default function AdminPage() {
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Welcome, {user.email}</h2>
           <p className="text-gray-600">
-            You are logged in as an admin. Here you can manage menu items and other content.
+            You are accessing the admin dashboard directly, bypassing the middleware checks.
           </p>
         </div>
         

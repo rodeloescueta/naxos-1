@@ -10,6 +10,7 @@ export default function AdminTestPage() {
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  const [adminEmails, setAdminEmails] = useState<string>('');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -17,12 +18,16 @@ export default function AdminTestPage() {
         const currentUser = await getCurrentUser();
         setUser(currentUser);
         
+        // Get the admin emails from environment variable
+        const envAdminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS || '';
+        setAdminEmails(envAdminEmails);
+        
         if (currentUser?.email) {
           const adminCheck = isEmailInAdminList(currentUser.email);
           setIsAdmin(adminCheck);
           console.log('User email:', currentUser.email);
           console.log('Is admin:', adminCheck);
-          console.log('Admin emails:', process.env.ADMIN_EMAILS);
+          console.log('Admin emails:', process.env.NEXT_PUBLIC_ADMIN_EMAILS);
         }
       } catch (error) {
         console.error('Error checking auth:', error);
@@ -58,6 +63,7 @@ export default function AdminTestPage() {
               <p className="text-gray-700"><strong>Email:</strong> {user.email}</p>
               <p className="text-gray-700"><strong>User ID:</strong> {user.id}</p>
               <p className="text-gray-700"><strong>Admin Status:</strong> {isAdmin ? 'Yes' : 'No'}</p>
+              <p className="text-gray-700"><strong>Admin Emails Config:</strong> {adminEmails || 'Not set'}</p>
               
               {isAdmin ? (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mt-2">
