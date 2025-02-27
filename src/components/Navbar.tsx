@@ -89,28 +89,19 @@ const Navbar = () => {
                 {user ? (
                   <div className="flex items-center space-x-4">
                     {userRole === 'admin' && (
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Link 
-                          href="/admin" 
-                          className="text-white bg-amber-600 hover:bg-amber-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            
-                            if (userRole === 'admin') {
-                              console.log('User is admin, navigating to admin page');
-                              router.push('/admin');
-                            } else {
-                              console.log('User is not admin, redirecting to login');
-                              router.push('/login?redirect=/admin');
-                            }
-                          }}
+                      <>
+                        <motion.div
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                         >
-                          Admin
-                        </Link>
-                      </motion.div>
+                          <Link 
+                            href="/admin-nav" 
+                            className="text-white bg-amber-600 hover:bg-amber-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                          >
+                            Admin
+                          </Link>
+                        </motion.div>
+                      </>
                     )}
                     <motion.button
                       onClick={handleSignOut}
