@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { signIn } from '@/lib/auth';
+import { signIn, isAdmin, getCurrentUser } from '@/lib/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -22,8 +22,18 @@ export default function LoginPage() {
     try {
       await signIn(email, password);
       
-      // Redirect to the specified path or home
-      router.push(redirectPath);
+      // Check if the user is an admin
+      const user = await getCurrentUser();
+      const userIsAdmin = isAdmin(user);
+      
+      if (userIsAdmin) {
+        // Redirect to the admin page if the user is an admin
+        router.push(redirectPath);
+      } else {
+        // Redirect to the home page if the user is not an admin
+        router.push('/');
+      }
+      
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');

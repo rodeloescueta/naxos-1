@@ -25,12 +25,16 @@ This guide will help you set up Supabase for authentication and database functio
 NEXT_PUBLIC_SUPABASE_URL=your_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Admin Access
+# Comma-separated list of admin email addresses
+NEXT_PUBLIC_ADMIN_EMAILS=admin@example.com,another-admin@example.com
 ```
 
 ## 3. Set Up Database Schema
 
 1. In your Supabase dashboard, go to the SQL Editor.
-2. Create a new query and paste the contents of the `supabase/schema.sql` file.
+2. Create a new query and paste the contents of the `supabase/unified-schema.sql` file.
 3. Run the query to create the necessary tables and set up Row Level Security (RLS) policies.
 
 ## 4. Configure Authentication
@@ -42,20 +46,14 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
    - Site URL: `http://localhost:3000` (for development) or your production URL
    - Redirect URLs: Add both `http://localhost:3000` and your production URL
 
-## 5. Create an Admin User
+## 5. Admin Access Control
 
-To create an admin user:
+In this project, admin access is controlled by checking if a user's email is in the `NEXT_PUBLIC_ADMIN_EMAILS` environment variable:
 
-1. Sign up through the application's signup page.
-2. In your Supabase dashboard, go to Authentication > Users.
-3. Find your user and click on it.
-4. Under "User Metadata", add:
-   ```json
-   {
-     "role": "admin"
-   }
-   ```
-5. Save the changes.
+1. Add the email addresses of users who should have admin access to the `NEXT_PUBLIC_ADMIN_EMAILS` environment variable.
+2. When a user logs in, the system will check if their email is in this list.
+3. If the email is in the list, the user will be redirected to the admin dashboard.
+4. If the email is not in the list, the user will be redirected to the home page.
 
 ## 6. Testing the Setup
 
@@ -64,21 +62,21 @@ To create an admin user:
    pnpm dev
    ```
 2. Navigate to `/signup` to create a new user.
-3. Use the Supabase dashboard to assign the "admin" role to this user.
+3. If the user's email is in the `NEXT_PUBLIC_ADMIN_EMAILS` list, they will have admin access.
 4. Sign in with this user at `/login`.
-5. You should now be able to access the `/admin` page.
+5. If the user has admin access, they will be redirected to the `/direct-admin` page.
 
 ## 7. Row Level Security (RLS) Policies
 
 The schema includes RLS policies that:
 - Allow anyone to read menu items
-- Allow only admins to create, update, or delete menu items
-- For blogs: Allow public access to published blogs, but restrict management to admins
+- Allow any authenticated user to create, update, or delete menu items
+- For blogs: Allow public access to published blogs, and allow any authenticated user to manage blogs
 
 ## 8. Troubleshooting
 
 - If you encounter authentication issues, check your environment variables.
-- If RLS policies are blocking operations, verify the user's role in Supabase.
+- If you can't access the admin page, verify that your email is in the `NEXT_PUBLIC_ADMIN_EMAILS` list.
 - For database errors, check the SQL logs in your Supabase dashboard.
 
 ## 9. Additional Resources

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signUp } from '@/lib/auth';
+import { signUp, isAdmin } from '@/lib/auth';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -28,8 +28,17 @@ export default function SignUpPage() {
     }
 
     try {
-      await signUp(email, password);
-      setMessage('Check your email for the confirmation link');
+      const { user } = await signUp(email, password);
+      
+      // Check if the email is in the admin list
+      const userIsAdmin = isAdmin(user);
+      
+      if (userIsAdmin) {
+        setMessage('Account created! You have admin privileges. Check your email for the confirmation link.');
+      } else {
+        setMessage('Account created! Check your email for the confirmation link.');
+      }
+      
       // Don't redirect immediately as the user needs to confirm their email
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');

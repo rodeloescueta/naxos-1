@@ -11,7 +11,7 @@ export interface UserProfile {
 
 // Check if user is an admin by examining their email
 export function isAdmin(user: User | null): boolean {
-  if (!user) return false;
+  if (!user || !user.email) return false;
   
   // Check if the user's email is in the admin list from environment variable
   const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(',') || [];
@@ -22,12 +22,6 @@ export async function signUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: {
-      data: {
-        // Set role based on whether the email is in the admin list
-        role: isAdmin({ email } as User) ? 'admin' : 'user',
-      },
-    },
   });
 
   if (error) {

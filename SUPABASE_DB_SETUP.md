@@ -31,10 +31,11 @@ We've simplified the database setup to work consistently across both development
 
 ## Access Control
 
-Our unified approach uses a simplified access control model:
+Our approach uses a simplified access control model:
 
 - **Public Read Access**: Anyone can view menu items and published blog posts
 - **Authenticated Write Access**: Any authenticated user can manage menu items and blog posts
+- **Admin Access Control**: Only users with emails in the `NEXT_PUBLIC_ADMIN_EMAILS` environment variable can access the admin interface
 
 This approach works well for both development and production environments where you control who has authentication credentials.
 
@@ -42,21 +43,27 @@ This approach works well for both development and production environments where 
 
 To manage content, you need to:
 
-1. **Create an Admin User**
-   - Sign up for an account on your Naxos website
+1. **Add Admin Emails to Environment Variables**
+   - Open your `.env.local` file
+   - Add the email addresses of users who should have admin access to the `NEXT_PUBLIC_ADMIN_EMAILS` variable
+   - Example: `NEXT_PUBLIC_ADMIN_EMAILS=admin@example.com,another-admin@example.com`
+
+2. **Create an Admin User**
+   - Sign up for an account on your Naxos website using an email that matches one in the `NEXT_PUBLIC_ADMIN_EMAILS` list
    - This user will automatically have admin privileges when authenticated
 
-2. **Access the Admin Interface**
-   - After logging in, you'll be redirected to the Direct Admin page
+3. **Access the Admin Interface**
+   - After logging in with an admin email, you'll be redirected to the Direct Admin page
    - You can also navigate to `/direct-admin` manually
 
 ## Testing the Setup
 
 1. **Ensure Environment Variables**
-   - Make sure your `.env.local` file contains the correct Supabase credentials:
+   - Make sure your `.env.local` file contains the correct Supabase credentials and admin emails:
      ```
      NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
      NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+     NEXT_PUBLIC_ADMIN_EMAILS=admin@example.com
      ```
 
 2. **Start the Development Server**
@@ -64,10 +71,10 @@ To manage content, you need to:
 
 3. **Sign In**
    - Navigate to the login page
-   - Sign in with your credentials
+   - Sign in with your admin credentials (email must be in the admin list)
 
 4. **Access the Admin Interface**
-   - After signing in, you'll be redirected to the Direct Admin page
+   - After signing in with an admin email, you'll be redirected to the Direct Admin page
    - You should be able to add, edit, and delete menu items
 
 ## Troubleshooting
@@ -78,16 +85,20 @@ If you encounter issues with database access:
    - Make sure you're properly signed in
    - Check the browser console for any authentication errors
 
-2. **Verify RLS Policies**
+2. **Verify Admin Access**
+   - Ensure your email is correctly added to the `NEXT_PUBLIC_ADMIN_EMAILS` variable
+   - Check that there are no typos or case differences between your login email and the admin list
+
+3. **Check RLS Policies**
    - In the Supabase dashboard, go to "Authentication" > "Policies"
    - Ensure the policies for the `menu_items` table are correctly set up
    - Policies should allow public read access and authenticated write access
 
-3. **Check Console Logs**
+4. **Check Console Logs**
    - Open your browser's developer tools
    - Check the console for any error messages related to Supabase operations
 
-4. **Restart the Development Server**
+5. **Restart the Development Server**
    - Sometimes, restarting the development server can resolve issues
    - Stop the server with Ctrl+C and restart it with `npm run dev`
 

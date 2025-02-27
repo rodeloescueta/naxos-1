@@ -42,7 +42,7 @@ export async function middleware(req: NextRequest) {
     console.log('User is authenticated and is an admin, allowing access to admin page');
   }
   
-  // If accessing login or signup pages while already authenticated, redirect to direct-admin
+  // If accessing login or signup pages while already authenticated
   if ((pathname === '/login' || pathname === '/signup') && session) {
     // Check if there's a redirect parameter
     const redirectTo = req.nextUrl.searchParams.get('redirect');

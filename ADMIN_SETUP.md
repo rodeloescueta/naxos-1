@@ -4,40 +4,27 @@ This guide explains how to set up admin users in the Naxos application.
 
 ## Setting Up an Admin User
 
-There are two ways to set up an admin user:
+In this application, admin access is controlled by checking if a user's email is in the `NEXT_PUBLIC_ADMIN_EMAILS` environment variable.
 
-### 1. Using the Command Line Script
+### Adding an Admin User
 
-We've created a script that allows you to easily set any user as an admin. To use it:
+1. Open your `.env.local` file
+2. Find the `NEXT_PUBLIC_ADMIN_EMAILS` variable
+3. Add the email address of the user you want to make an admin
+4. Multiple admin emails should be separated by commas
+5. Example:
+   ```
+   NEXT_PUBLIC_ADMIN_EMAILS=admin@example.com,another-admin@example.com
+   ```
+6. Restart your development server for the changes to take effect
 
-1. Make sure the user has already signed up through the application
-2. Run the following command, replacing `user@example.com` with the user's email:
+### Admin Access Control
 
-```bash
-node src/scripts/set-admin-role.js user@example.com
-```
-
-3. You should see a success message confirming the user has been set as an admin
-4. The user can now access the `/admin` page
-
-### 2. Manually Through the Supabase Dashboard
-
-You can also set a user as an admin directly through the Supabase dashboard:
-
-1. Go to your [Supabase project dashboard](https://app.supabase.com)
-2. Navigate to "Authentication" > "Users"
-3. Find the user you want to make an admin
-4. Click on the user to open their details
-5. In the "User Metadata" section, add or modify the JSON to include the admin role:
-
-```json
-{
-  "role": "admin"
-}
-```
-
-6. Save the changes
-7. The user can now access the `/admin` page
+- When a user signs up or logs in, the system checks if their email is in the `NEXT_PUBLIC_ADMIN_EMAILS` list
+- If the email is in the list, the user will be redirected to the admin dashboard
+- If the email is not in the list, the user will be redirected to the home page
+- Admin users can access the `/direct-admin` page and perform CRUD operations on menu items
+- Non-admin users cannot access the admin pages and will be redirected to the home page
 
 ## Verifying Admin Status
 
@@ -46,14 +33,15 @@ To verify that a user has admin privileges:
 1. Log in with the user's credentials
 2. Visit `/check-role` to see the user's current role
 3. If the user has admin privileges, you'll see a confirmation message
-4. Try accessing the `/admin` page - you should be able to access it if you have admin privileges
+4. Try accessing the `/direct-admin` page - you should be able to access it if you have admin privileges
 
 ## Troubleshooting
 
-If a user can't access the admin page after being set as an admin:
+If a user can't access the admin page after being added to the admin list:
 
 1. Make sure the user is logged in
-2. Check the user's role at `/check-role`
-3. If the role is not showing as "admin", try setting the role again
-4. Clear browser cookies and local storage, then log in again
-5. If issues persist, check the browser console for errors 
+2. Check that the email address in the `NEXT_PUBLIC_ADMIN_EMAILS` variable exactly matches the user's email address (case-sensitive)
+3. Verify that the environment variable is properly formatted (comma-separated with no spaces)
+4. Try clearing browser cookies and local storage, then log in again
+5. Visit `/clear-session` to clear your session and log in again
+6. If issues persist, check the browser console for errors 
