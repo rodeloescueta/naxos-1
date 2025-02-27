@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, isAdmin, signOut, isEmailInAdminList } from '@/lib/auth';
+import { getCurrentUser, isAdmin, signOut } from '@/lib/auth';
 import { User } from '@supabase/supabase-js';
 import { 
   MenuItem, 
@@ -42,24 +42,15 @@ export default function AdminPage() {
           return;
         }
         
-        // First check directly if the email is in the admin list
-        const directAdminCheck = isEmailInAdminList(currentUser.email);
-        console.log('Direct admin check result:', directAdminCheck);
-        
-        // Also check using the async isAdmin function
-        const adminCheck = await isAdmin(currentUser);
-        console.log('Async admin check result:', adminCheck);
-        
-        // Use either check - if either returns true, user is admin
-        const isUserAdmin = directAdminCheck || adminCheck;
-        setAdminStatus(isUserAdmin);
+        // In our unified approach, any authenticated user is an admin
+        const adminCheck = isAdmin(currentUser);
+        setAdminStatus(adminCheck);
         
         console.log('User email:', currentUser.email);
-        console.log('Final admin status:', isUserAdmin);
-        console.log('Admin emails from env:', process.env.NEXT_PUBLIC_ADMIN_EMAILS);
+        console.log('Admin status:', adminCheck);
         
         // If not admin, redirect to home
-        if (!isUserAdmin) {
+        if (!adminCheck) {
           console.log('User is not admin, redirecting to home');
           router.push('/');
         } else {
