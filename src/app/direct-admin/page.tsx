@@ -323,290 +323,297 @@ export default function AdminPage() {
     (a.sequence || 0) - (b.sequence || 0)
   );
 
-  // Show loading state while checking authentication
-  if (isLoading || !authChecked) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-24 bg-white">
-        <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 lg:text-5xl mb-6">
-            Loading...
-          </h1>
-          <p className="text-sm text-gray-600">
-            Checking authentication and loading data
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen flex-col p-8 bg-white">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">Admin Dashboard</h1>
-        <div className="flex space-x-4">
-          <Link href="/direct-admin/categories" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-            Manage Categories
+    <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
+      {!authChecked ? (
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+        </div>
+      ) : !user ? (
+        <div className="max-w-md mx-auto bg-gray-800 p-8 rounded-lg shadow-lg">
+          <h1 className="text-2xl font-bold mb-6 text-white">Admin Access Required</h1>
+          <p className="mb-6 text-gray-300">Please log in to access the admin dashboard.</p>
+          <Link 
+            href="/login" 
+            className="block w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md text-center transition-colors"
+          >
+            Go to Login
           </Link>
-          <button
-            onClick={handleSignOut}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+        </div>
+      ) : !isAdmin ? (
+        <div className="max-w-md mx-auto bg-gray-800 p-8 rounded-lg shadow-lg">
+          <h1 className="text-2xl font-bold mb-6 text-white">Admin Access Required</h1>
+          <p className="mb-6 text-gray-300">Your account does not have admin privileges.</p>
+          <button 
+            onClick={handleSignOut} 
+            className="block w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md text-center transition-colors"
           >
             Sign Out
           </button>
         </div>
-      </div>
-
-      {statusMessage && (
-        <div className={`p-4 mb-6 rounded ${statusMessage.includes('Failed') || statusMessage.includes('Error') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-          {statusMessage}
-        </div>
-      )}
-
-      <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2 text-gray-800">Filter by Category</h2>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setActiveCategory(null)}
-            className={`px-3 py-1 rounded ${activeCategory === null ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setActiveCategory('')}
-            className={`px-3 py-1 rounded ${activeCategory === '' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-          >
-            Uncategorized
-          </button>
-          {categories.map(category => (
-            <button
-              key={category.id}
-              onClick={() => setActiveCategory(category.id)}
-              className={`px-3 py-1 rounded ${activeCategory === category.id ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">{isEditing ? 'Edit Menu Item' : 'Add New Menu Item'}</h2>
-          <form onSubmit={handleFormSubmit} className="space-y-4 bg-gray-50 p-6 rounded-lg shadow">
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                Title *
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description *
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                required
-                rows={3}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                Price *
-              </label>
-              <input
-                type="number"
-                id="price"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                required
-                step="0.01"
-                min="0"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="category_id" className="block text-sm font-medium text-gray-700">
-                Category
-              </label>
-              <select
-                id="category_id"
-                name="category_id"
-                value={formData.category_id}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+      ) : (
+        <div className="max-w-6xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
+            <div className="flex gap-4">
+              <Link 
+                href="/direct-admin/categories" 
+                className="py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md transition-colors"
               >
-                <option value="">Uncategorized</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="sequence" className="block text-sm font-medium text-gray-700">
-                Display Order
-              </label>
-              <input
-                type="number"
-                id="sequence"
-                name="sequence"
-                value={formData.sequence}
-                onChange={handleInputChange}
-                min="0"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                Lower numbers appear first. You can also drag and drop items to reorder them.
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="photo_url" className="block text-sm font-medium text-gray-700">
-                Photo URL
-              </label>
-              <input
-                type="text"
-                id="photo_url"
-                name="photo_url"
-                value={formData.photo_url}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="is_featured"
-                name="is_featured"
-                checked={formData.is_featured}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label htmlFor="is_featured" className="ml-2 block text-sm text-gray-700">
-                Featured Item
-              </label>
-            </div>
-
-            <div className="flex space-x-4 pt-4">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                Manage Categories
+              </Link>
+              <button 
+                onClick={handleSignOut} 
+                className="py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors"
               >
-                {isEditing ? 'Update Item' : 'Add Item'}
+                Sign Out
               </button>
-              {isEditing && (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                >
-                  Cancel
-                </button>
-              )}
             </div>
-          </form>
-        </div>
+          </div>
 
-        <div>
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">
-            {activeCategory === null 
-              ? 'All Menu Items' 
-              : activeCategory === '' 
-                ? 'Uncategorized Menu Items' 
-                : `Menu Items in ${categories.find(c => c.id === activeCategory)?.name || 'Category'}`}
-          </h2>
-          <p className="mb-4 text-gray-600">
-            {activeCategory !== null && 'Drag and drop to reorder items within this category.'}
-          </p>
-          
-          {loading ? (
-            <p className="text-gray-600">Loading menu items...</p>
-          ) : sortedMenuItems.length === 0 ? (
-            <p className="text-gray-600">No menu items found in this category. Add your first item!</p>
-          ) : (
-            <div className="space-y-4">
-              {sortedMenuItems.map((item, index) => (
-                <div 
-                  key={item.id} 
-                  className={`border rounded-lg p-4 bg-gray-50 shadow ${activeCategory !== null ? 'cursor-move' : ''} ${isDragging ? 'transition-transform' : ''}`}
-                  draggable={activeCategory !== null}
-                  onDragStart={activeCategory !== null ? (e) => handleDragStart(e, index) : undefined}
-                  onDragOver={activeCategory !== null ? handleDragOver : undefined}
-                  onDrop={activeCategory !== null ? (e) => handleDrop(e, index) : undefined}
-                  onDragEnd={activeCategory !== null ? handleDragEnd : undefined}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4 text-white">Filter by Category</h2>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setActiveCategory(null)}
+                className={`px-4 py-2 rounded-md transition-colors ${
+                  activeCategory === null
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                }`}
+              >
+                All
+              </button>
+              {categories.map(category => (
+                <button
+                  key={category.id}
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`px-4 py-2 rounded-md transition-colors ${
+                    activeCategory === category.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                  }`}
                 >
-                  <div className="flex justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        {activeCategory !== null && (
-                          <span className="mr-2 text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                          </span>
-                        )}
-                        <h3 className="text-lg font-semibold text-gray-800">{item.title}</h3>
-                      </div>
-                      <div className="text-lg font-bold text-indigo-600 mt-1">${parseFloat(item.price.toString()).toFixed(2)}</div>
-                      <p className="text-gray-600 mt-1">{item.description}</p>
-                      
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {item.category && (
-                          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                            {item.category}
-                          </span>
-                        )}
-                        {item.is_featured && (
-                          <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
-                            Featured
-                          </span>
-                        )}
-                        <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
-                          Order: {item.sequence || 0}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col space-y-2 ml-4">
-                      <button
-                        onClick={() => handleEditItem(item)}
-                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  {category.name}
+                </button>
               ))}
             </div>
-          )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Add/Edit Menu Item Form */}
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+              <h2 className="text-xl font-semibold mb-6 text-white">
+                {isEditing ? 'Edit Menu Item' : 'Add New Menu Item'}
+              </h2>
+
+              <form onSubmit={handleFormSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-1">
+                    Title *
+                  </label>
+                  <input
+                    id="title"
+                    name="title"
+                    type="text"
+                    required
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    required
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className="w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="price" className="block text-sm font-medium text-gray-300 mb-1">
+                    Price *
+                  </label>
+                  <input
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    required
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="category_id" className="block text-sm font-medium text-gray-300 mb-1">
+                    Category
+                  </label>
+                  <select
+                    id="category_id"
+                    name="category_id"
+                    value={formData.category_id}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="sequence" className="block text-sm font-medium text-gray-300 mb-1">
+                    Display Order
+                  </label>
+                  <input
+                    id="sequence"
+                    name="sequence"
+                    type="number"
+                    value={formData.sequence}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Lower numbers appear first. You can also drag and drop items to reorder them.</p>
+                </div>
+
+                <div>
+                  <label htmlFor="photo_url" className="block text-sm font-medium text-gray-300 mb-1">
+                    Photo URL
+                  </label>
+                  <input
+                    id="photo_url"
+                    name="photo_url"
+                    type="text"
+                    value={formData.photo_url}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 bg-white text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    id="is_featured"
+                    name="is_featured"
+                    type="checkbox"
+                    checked={formData.is_featured}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="is_featured" className="ml-2 block text-sm text-gray-300">
+                    Featured Item
+                  </label>
+                </div>
+
+                {statusMessage && (
+                  <div className={`p-3 rounded-md ${
+                    statusMessage.includes('Error') 
+                      ? 'bg-red-900/50 text-red-200' 
+                      : 'bg-green-900/50 text-green-200'
+                  }`}>
+                    {statusMessage}
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors disabled:opacity-50"
+                  >
+                    {loading ? 'Saving...' : isEditing ? 'Update Item' : 'Add Item'}
+                  </button>
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+
+            {/* Menu Items List */}
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+              <h2 className="text-xl font-semibold mb-6 text-white">All Menu Items</h2>
+              
+              {loading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+                </div>
+              ) : filteredMenuItems.length === 0 ? (
+                <p className="text-gray-400 text-center py-12">No menu items found in this category. Add your first item!</p>
+              ) : (
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                  {filteredMenuItems.map((item, index) => (
+                    <div 
+                      key={item.id}
+                      draggable={!isDragging}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`p-4 bg-gray-700 rounded-md transition-all ${
+                        isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium text-white">{item.title}</h3>
+                          <p className="text-sm text-gray-300 line-clamp-2 mt-1">{item.description}</p>
+                          <div className="flex gap-2 mt-2">
+                            <span className="text-sm font-medium text-blue-300">${parseFloat(item.price.toString()).toFixed(2)}</span>
+                            {item.is_featured && (
+                              <span className="text-xs bg-yellow-600 text-yellow-100 px-2 py-0.5 rounded-full">Featured</span>
+                            )}
+                            {item.category_id && (
+                              <span className="text-xs bg-purple-600 text-purple-100 px-2 py-0.5 rounded-full">
+                                {categories.find(c => c.id === item.category_id)?.name || 'Unknown Category'}
+                              </span>
+                            )}
+                            <span className="text-xs bg-gray-600 text-gray-100 px-2 py-0.5 rounded-full">
+                              Order: {item.sequence}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditItem(item)}
+                            className="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 } 

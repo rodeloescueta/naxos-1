@@ -52,9 +52,17 @@ USING (true);
 ALTER TABLE "public"."menu_items" 
 ADD COLUMN IF NOT EXISTS "sequence" integer NOT NULL DEFAULT 0;
 
+-- Add category field to menu_items table if it doesn't exist (for backward compatibility)
+ALTER TABLE "public"."menu_items" 
+ADD COLUMN IF NOT EXISTS "category" text;
+
 -- Add category_id field to menu_items table if it doesn't exist
 ALTER TABLE "public"."menu_items" 
 ADD COLUMN IF NOT EXISTS "category_id" uuid REFERENCES "public"."categories"("id") ON DELETE SET NULL;
+
+-- Add is_featured field to menu_items table if it doesn't exist
+ALTER TABLE "public"."menu_items" 
+ADD COLUMN IF NOT EXISTS "is_featured" boolean NOT NULL DEFAULT false;
 
 -- Create index on category_id for better performance
 CREATE INDEX IF NOT EXISTS "menu_items_category_id_idx" ON "public"."menu_items" ("category_id");
@@ -95,5 +103,6 @@ END $$;
 
 -- Add comment to explain the relationship between menu_items and categories
 COMMENT ON COLUMN "public"."menu_items"."category_id" IS 'Foreign key to categories table. Replaces the text-based category field.';
+COMMENT ON COLUMN "public"."menu_items"."category" IS 'Legacy text-based category field. Kept for backward compatibility.';
 COMMENT ON COLUMN "public"."menu_items"."sequence" IS 'Order in which the menu item should be displayed within its category.';
 COMMENT ON COLUMN "public"."categories"."sequence" IS 'Order in which the category should be displayed on the menu.'; 
