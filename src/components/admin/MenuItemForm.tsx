@@ -26,7 +26,7 @@ export default function MenuItemForm({
   const [title, setTitle] = useState(menuItem?.title || '');
   const [description, setDescription] = useState(menuItem?.description || '');
   const [price, setPrice] = useState(menuItem?.price?.toString() || '');
-  const [imageUrl, setImageUrl] = useState(menuItem?.image_url || '');
+  const [imageUrl, setImageUrl] = useState(menuItem?.photo_url || '');
   const [category, setCategory] = useState(menuItem?.category || '');
   const [isFeatured, setIsFeatured] = useState(menuItem?.is_featured || false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -62,7 +62,7 @@ export default function MenuItemForm({
       title,
       description: description || null,
       price: parseFloat(price),
-      image_url: imageUrl || null,
+      photo_url: imageUrl || null,
       category: category || null,
       is_featured: isFeatured,
     };
