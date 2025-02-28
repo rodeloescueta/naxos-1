@@ -19,13 +19,9 @@ export default function LoginPage() {
       console.log('Login page: User already logged in:', user.email);
       console.log('Login page: User is admin:', isAdmin);
       
-      if (isAdmin) {
-        console.log('Login page: Redirecting to admin page');
-        router.push('/direct-admin');
-      } else {
-        console.log('Login page: Redirecting to home page');
-        router.push('/');
-      }
+      // Always redirect to home page after login
+      console.log('Login page: Redirecting to home page');
+      router.push('/');
     }
   }, [user, isAdmin, router]);
 
@@ -56,14 +52,9 @@ export default function LoginPage() {
       // Refresh user data to ensure we have the latest info
       await refreshUser();
       
-      // Check if user is admin and redirect accordingly
-      if (isAdmin) {
-        console.log('Login page: User is admin, redirecting to admin page');
-        router.push('/direct-admin');
-      } else {
-        console.log('Login page: User is not admin, redirecting to home page');
-        router.push('/');
-      }
+      // Always redirect to home page after login
+      console.log('Login page: Redirecting to home page');
+      router.push('/');
     } catch (error) {
       console.error('Login page: Unexpected error during sign in:', error);
       setStatusMessage('An unexpected error occurred');
@@ -73,20 +64,20 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-8 bg-black/40">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-xl">
+    <div className="flex min-h-screen flex-col items-center justify-center p-8 bg-black">
+      <div className="w-full max-w-md p-8 space-y-8 bg-gray-900 rounded-lg shadow-xl border border-gray-800">
         <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 lg:text-5xl mb-6">
+          <h1 className="text-4xl font-extrabold tracking-tight text-white lg:text-5xl mb-6">
             Login
           </h1>
-          <p className="text-sm text-gray-600 mb-8">
+          <p className="text-sm text-gray-300 mb-8">
             Sign in to access your account
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-200">
               Email
             </label>
             <input
@@ -96,12 +87,12 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-200">
               Password
             </label>
             <input
@@ -111,12 +102,12 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md shadow-sm text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           {statusMessage && (
-            <div className={`text-sm ${statusMessage.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+            <div className={`text-sm ${statusMessage.includes('Error') ? 'text-red-400' : 'text-green-400'}`}>
               {statusMessage}
             </div>
           )}
