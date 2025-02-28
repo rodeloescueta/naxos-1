@@ -6,6 +6,8 @@ export interface MenuItem {
   description: string;
   price: number;
   photo_url: string | null;
+  category: string | null;
+  is_featured: boolean;
   created_at: string;
 }
 
@@ -14,13 +16,15 @@ export interface CreateMenuItemData {
   description: string;
   price: number;
   photo_url?: string;
+  category?: string;
+  is_featured?: boolean;
 }
 
 export interface UpdateMenuItemData {
   title?: string;
   description?: string | null;
   price?: number;
-  image_url?: string | null;
+  photo_url?: string | null;
   category?: string | null;
   is_featured?: boolean;
 }

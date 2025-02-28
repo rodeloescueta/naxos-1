@@ -21,12 +21,16 @@ export default function AdminPage() {
     description: string;
     price: string;
     photo_url: string;
+    category: string;
+    is_featured: boolean;
   }>({
     id: '',
     title: '',
     description: '',
     price: '',
     photo_url: '',
+    category: '',
+    is_featured: false
   });
   const [isEditing, setIsEditing] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
@@ -97,9 +101,15 @@ export default function AdminPage() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target as HTMLInputElement;
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData({ ...formData, [name]: checked });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const resetForm = () => {
@@ -109,6 +119,8 @@ export default function AdminPage() {
       description: '',
       price: '',
       photo_url: '',
+      category: '',
+      is_featured: false
     });
     setIsEditing(false);
   };
@@ -132,11 +144,13 @@ export default function AdminPage() {
         return;
       }
       
-      const itemData: CreateMenuItemData = {
+      const itemData: any = {
         title: formData.title,
         description: formData.description,
         price: priceValue,
         photo_url: formData.photo_url || undefined,
+        category: formData.category || undefined,
+        is_featured: formData.is_featured
       };
       
       if (isEditing) {
@@ -167,6 +181,8 @@ export default function AdminPage() {
       description: item.description,
       price: item.price.toString(),
       photo_url: item.photo_url || '',
+      category: item.category || '',
+      is_featured: item.is_featured || false
     });
     setIsEditing(true);
     setStatusMessage('');
@@ -193,9 +209,9 @@ export default function AdminPage() {
   // Show loading state while checking authentication
   if (isLoading || !authChecked) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-24">
+      <div className="flex min-h-screen flex-col items-center justify-center p-24 bg-white">
         <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-6">
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 lg:text-5xl mb-6">
             Loading...
           </h1>
           <p className="text-sm text-gray-600">
@@ -206,10 +222,19 @@ export default function AdminPage() {
     );
   }
 
+  // Categories for the dropdown
+  const categories = [
+    "Wraps",
+    "Roast Chicken Meals",
+    "Burgers Meals",
+    "Meals",
+    "Pork Roast Meals"
+  ];
+
   return (
-    <div className="flex min-h-screen flex-col p-8">
+    <div className="flex min-h-screen flex-col p-8 bg-white">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-extrabold tracking-tight">Admin Dashboard</h1>
+        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">Admin Dashboard</h1>
         <button
           onClick={handleSignOut}
           className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
@@ -226,8 +251,8 @@ export default function AdminPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <h2 className="text-2xl font-bold mb-4">{isEditing ? 'Edit Menu Item' : 'Add New Menu Item'}</h2>
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">{isEditing ? 'Edit Menu Item' : 'Add New Menu Item'}</h2>
+          <form onSubmit={handleFormSubmit} className="space-y-4 bg-gray-50 p-6 rounded-lg shadow">
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700">
                 Title *
@@ -276,11 +301,31 @@ export default function AdminPage() {
             </div>
 
             <div>
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                Category
+              </label>
+              <select
+                id="category"
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">Select a category</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label htmlFor="photo_url" className="block text-sm font-medium text-gray-700">
                 Photo URL
               </label>
               <input
-                type="url"
+                type="text"
                 id="photo_url"
                 name="photo_url"
                 value={formData.photo_url}
@@ -289,7 +334,21 @@ export default function AdminPage() {
               />
             </div>
 
-            <div className="flex space-x-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="is_featured"
+                name="is_featured"
+                checked={formData.is_featured}
+                onChange={handleInputChange}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="is_featured" className="ml-2 block text-sm text-gray-700">
+                Featured Item
+              </label>
+            </div>
+
+            <div className="flex space-x-4 pt-4">
               <button
                 type="submit"
                 className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
@@ -310,39 +369,38 @@ export default function AdminPage() {
         </div>
 
         <div>
-          <h2 className="text-2xl font-bold mb-4">Menu Items</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">Menu Items</h2>
           {loading ? (
-            <p>Loading menu items...</p>
+            <p className="text-gray-600">Loading menu items...</p>
           ) : menuItems.length === 0 ? (
-            <p>No menu items found.</p>
+            <p className="text-gray-600">No menu items found. Add your first item!</p>
           ) : (
             <div className="space-y-4">
               {menuItems.map((item) => (
-                <div key={item.id} className="border rounded-lg p-4 bg-white shadow">
+                <div key={item.id} className="border rounded-lg p-4 bg-gray-50 shadow">
                   <div className="flex justify-between">
-                    <h3 className="text-lg font-semibold">{item.title}</h3>
-                    <span className="font-bold">${item.price.toFixed(2)}</span>
+                    <h3 className="text-lg font-semibold text-gray-800">{item.title}</h3>
+                    <div className="text-lg font-bold text-indigo-600">${parseFloat(item.price.toString()).toFixed(2)}</div>
                   </div>
-                  <p className="text-gray-600 mt-2">{item.description}</p>
-                  {item.photo_url && (
-                    <div className="mt-2">
-                      <img
-                        src={item.photo_url}
-                        alt={item.title}
-                        className="h-40 w-full object-cover rounded"
-                      />
-                    </div>
+                  <p className="text-gray-600 mt-1">{item.description}</p>
+                  {item.category && (
+                    <p className="text-sm text-gray-500 mt-1">Category: {item.category}</p>
+                  )}
+                  {item.is_featured && (
+                    <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded mt-2">
+                      Featured
+                    </span>
                   )}
                   <div className="flex space-x-2 mt-4">
                     <button
                       onClick={() => handleEditItem(item)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDeleteItem(item.id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                      className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
                     >
                       Delete
                     </button>
