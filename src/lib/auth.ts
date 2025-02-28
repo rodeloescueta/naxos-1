@@ -138,4 +138,22 @@ export async function getSession() {
     console.error('Auth: Error getting session:', error);
     return null;
   }
+}
+
+// Add the missing getUserRole function
+export async function getUserRole(user: User | null): Promise<string | null> {
+  if (!user) {
+    console.log('Auth: getUserRole - No user provided');
+    return null;
+  }
+  
+  // Check if user is an admin based on email
+  if (isAdmin(user)) {
+    console.log('Auth: getUserRole - User is admin:', user.email);
+    return 'admin';
+  }
+  
+  // Default role for authenticated users
+  console.log('Auth: getUserRole - User is not admin:', user.email);
+  return 'user';
 } 
