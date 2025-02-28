@@ -5,15 +5,20 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { 
   getMenuItems, 
+  getMenuItemsWithCategories,
   createMenuItem, 
   updateMenuItem, 
-  deleteMenuItem, 
+  deleteMenuItem,
+  reorderMenuItems,
   MenuItem,
   CreateMenuItemData
 } from '@/lib/menu-items';
+import { getCategories, Category } from '@/lib/categories';
+import Link from 'next/link';
 
 export default function AdminPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<{
     id: string;
@@ -21,8 +26,10 @@ export default function AdminPage() {
     description: string;
     price: string;
     photo_url: string;
-    category: string;
+    category: string; // Keeping for backward compatibility
+    category_id: string;
     is_featured: boolean;
+    sequence: string;
   }>({
     id: '',
     title: '',
@@ -30,11 +37,15 @@ export default function AdminPage() {
     price: '',
     photo_url: '',
     category: '',
-    is_featured: false
+    category_id: '',
+    is_featured: false,
+    sequence: '0'
   });
   const [isEditing, setIsEditing] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [authChecked, setAuthChecked] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   const router = useRouter();
   const { user, isAdmin, isLoading, signOut, refreshUser } = useAuth();
@@ -68,23 +79,31 @@ export default function AdminPage() {
       
       console.log('Admin page: User is admin, access granted');
       setAuthChecked(true);
-      loadMenuItems();
+      loadData();
     };
     
     checkAuth();
   }, [user, isAdmin, isLoading, router, refreshUser]);
 
-  const loadMenuItems = async () => {
+  const loadData = async () => {
     try {
-      console.log('Admin page: Loading menu items');
+      console.log('Admin page: Loading data');
       setLoading(true);
+      
+      // Load categories first
+      const categoriesData = await getCategories();
+      console.log(`Admin page: Loaded ${categoriesData.length} categories`);
+      setCategories(categoriesData);
+      
+      // Then load menu items
       const items = await getMenuItems();
       console.log(`Admin page: Loaded ${items.length} menu items`);
       setMenuItems(items);
+      
       setStatusMessage('');
     } catch (error) {
-      console.error('Admin page: Error loading menu items:', error);
-      setStatusMessage('Failed to load menu items');
+      console.error('Admin page: Error loading data:', error);
+      setStatusMessage('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -107,6 +126,14 @@ export default function AdminPage() {
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData({ ...formData, [name]: checked });
+    } else if (name === 'category_id') {
+      // When category_id changes, also update the category field for backward compatibility
+      const selectedCategory = categories.find(cat => cat.id === value);
+      setFormData({ 
+        ...formData, 
+        [name]: value,
+        category: selectedCategory ? selectedCategory.name : ''
+      });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -120,7 +147,9 @@ export default function AdminPage() {
       price: '',
       photo_url: '',
       category: '',
-      is_featured: false
+      category_id: '',
+      is_featured: false,
+      sequence: '0'
     });
     setIsEditing(false);
   };
@@ -137,10 +166,16 @@ export default function AdminPage() {
         return;
       }
       
-      // Convert price to number
+      // Convert price and sequence to numbers
       const priceValue = parseFloat(formData.price);
       if (isNaN(priceValue)) {
         setStatusMessage('Price must be a valid number');
+        return;
+      }
+      
+      const sequenceValue = parseInt(formData.sequence);
+      if (isNaN(sequenceValue)) {
+        setStatusMessage('Sequence must be a valid number');
         return;
       }
       
@@ -150,7 +185,9 @@ export default function AdminPage() {
         price: priceValue,
         photo_url: formData.photo_url || undefined,
         category: formData.category || undefined,
-        is_featured: formData.is_featured
+        category_id: formData.category_id || null,
+        is_featured: formData.is_featured,
+        sequence: sequenceValue
       };
       
       if (isEditing) {
@@ -166,7 +203,7 @@ export default function AdminPage() {
       }
       
       resetForm();
-      loadMenuItems();
+      loadData();
     } catch (error) {
       console.error('Admin page: Error saving menu item:', error);
       setStatusMessage('Failed to save menu item');
@@ -182,7 +219,9 @@ export default function AdminPage() {
       price: item.price.toString(),
       photo_url: item.photo_url || '',
       category: item.category || '',
-      is_featured: item.is_featured || false
+      category_id: item.category_id || '',
+      is_featured: item.is_featured || false,
+      sequence: item.sequence?.toString() || '0'
     });
     setIsEditing(true);
     setStatusMessage('');
@@ -199,12 +238,90 @@ export default function AdminPage() {
       await deleteMenuItem(id);
       console.log('Admin page: Menu item deleted successfully');
       setStatusMessage('Menu item deleted successfully');
-      loadMenuItems();
+      loadData();
     } catch (error) {
       console.error('Admin page: Error deleting menu item:', error);
       setStatusMessage('Failed to delete menu item');
     }
   };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.setData('text/plain', index.toString());
+    setIsDragging(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    if (dragIndex === dropIndex) return;
+
+    // Filter items by the active category
+    const filteredItems = activeCategory 
+      ? menuItems.filter(item => item.category_id === activeCategory)
+      : menuItems.filter(item => !item.category_id);
+
+    const newItems = [...filteredItems];
+    const draggedItem = newItems[dragIndex];
+    
+    // Remove the dragged item
+    newItems.splice(dragIndex, 1);
+    // Insert it at the new position
+    newItems.splice(dropIndex, 0, draggedItem);
+    
+    // Update the sequence values
+    const updatedItems = newItems.map((item, index) => ({
+      ...item,
+      sequence: index
+    }));
+    
+    // Update the full menu items list
+    const updatedMenuItems = [...menuItems];
+    updatedItems.forEach(updatedItem => {
+      const index = updatedMenuItems.findIndex(item => item.id === updatedItem.id);
+      if (index !== -1) {
+        updatedMenuItems[index] = updatedItem;
+      }
+    });
+    
+    setMenuItems(updatedMenuItems);
+    setIsDragging(false);
+    
+    // Save the new order to the database
+    saveNewOrder(activeCategory, updatedItems.map(item => item.id));
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  const saveNewOrder = async (categoryId: string | null, orderedIds: string[]) => {
+    try {
+      setStatusMessage('Saving new order...');
+      await reorderMenuItems(categoryId, orderedIds);
+      setStatusMessage('Order saved successfully');
+    } catch (error) {
+      console.error('Admin page: Error saving new order:', error);
+      setStatusMessage('Failed to save new order');
+      // Reload the original order
+      loadData();
+    }
+  };
+
+  // Filter menu items by category
+  const filteredMenuItems = activeCategory 
+    ? menuItems.filter(item => item.category_id === activeCategory)
+    : activeCategory === null 
+      ? menuItems // Show all items when no category is selected
+      : menuItems.filter(item => !item.category_id); // Show uncategorized items
+
+  // Sort menu items by sequence
+  const sortedMenuItems = [...filteredMenuItems].sort((a, b) => 
+    (a.sequence || 0) - (b.sequence || 0)
+  );
 
   // Show loading state while checking authentication
   if (isLoading || !authChecked) {
@@ -222,25 +339,21 @@ export default function AdminPage() {
     );
   }
 
-  // Categories for the dropdown
-  const categories = [
-    "Wraps",
-    "Roast Chicken Meals",
-    "Burgers Meals",
-    "Meals",
-    "Pork Roast Meals"
-  ];
-
   return (
     <div className="flex min-h-screen flex-col p-8 bg-white">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">Admin Dashboard</h1>
-        <button
-          onClick={handleSignOut}
-          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-        >
-          Sign Out
-        </button>
+        <div className="flex space-x-4">
+          <Link href="/direct-admin/categories" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Manage Categories
+          </Link>
+          <button
+            onClick={handleSignOut}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Sign Out
+          </button>
+        </div>
       </div>
 
       {statusMessage && (
@@ -248,6 +361,33 @@ export default function AdminPage() {
           {statusMessage}
         </div>
       )}
+
+      <div className="mb-6">
+        <h2 className="text-xl font-bold mb-2 text-gray-800">Filter by Category</h2>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveCategory(null)}
+            className={`px-3 py-1 rounded ${activeCategory === null ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setActiveCategory('')}
+            className={`px-3 py-1 rounded ${activeCategory === '' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+          >
+            Uncategorized
+          </button>
+          {categories.map(category => (
+            <button
+              key={category.id}
+              onClick={() => setActiveCategory(category.id)}
+              className={`px-3 py-1 rounded ${activeCategory === category.id ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
@@ -301,23 +441,41 @@ export default function AdminPage() {
             </div>
 
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="category_id" className="block text-sm font-medium text-gray-700">
                 Category
               </label>
               <select
-                id="category"
-                name="category"
-                value={formData.category}
+                id="category_id"
+                name="category_id"
+                value={formData.category_id}
                 onChange={handleInputChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="">Select a category</option>
+                <option value="">Uncategorized</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                  <option key={category.id} value={category.id}>
+                    {category.name}
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label htmlFor="sequence" className="block text-sm font-medium text-gray-700">
+                Display Order
+              </label>
+              <input
+                type="number"
+                id="sequence"
+                name="sequence"
+                value={formData.sequence}
+                onChange={handleInputChange}
+                min="0"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                Lower numbers appear first. You can also drag and drop items to reorder them.
+              </p>
             </div>
 
             <div>
@@ -369,41 +527,79 @@ export default function AdminPage() {
         </div>
 
         <div>
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">Menu Items</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">
+            {activeCategory === null 
+              ? 'All Menu Items' 
+              : activeCategory === '' 
+                ? 'Uncategorized Menu Items' 
+                : `Menu Items in ${categories.find(c => c.id === activeCategory)?.name || 'Category'}`}
+          </h2>
+          <p className="mb-4 text-gray-600">
+            {activeCategory !== null && 'Drag and drop to reorder items within this category.'}
+          </p>
+          
           {loading ? (
             <p className="text-gray-600">Loading menu items...</p>
-          ) : menuItems.length === 0 ? (
-            <p className="text-gray-600">No menu items found. Add your first item!</p>
+          ) : sortedMenuItems.length === 0 ? (
+            <p className="text-gray-600">No menu items found in this category. Add your first item!</p>
           ) : (
             <div className="space-y-4">
-              {menuItems.map((item) => (
-                <div key={item.id} className="border rounded-lg p-4 bg-gray-50 shadow">
+              {sortedMenuItems.map((item, index) => (
+                <div 
+                  key={item.id} 
+                  className={`border rounded-lg p-4 bg-gray-50 shadow ${activeCategory !== null ? 'cursor-move' : ''} ${isDragging ? 'transition-transform' : ''}`}
+                  draggable={activeCategory !== null}
+                  onDragStart={activeCategory !== null ? (e) => handleDragStart(e, index) : undefined}
+                  onDragOver={activeCategory !== null ? handleDragOver : undefined}
+                  onDrop={activeCategory !== null ? (e) => handleDrop(e, index) : undefined}
+                  onDragEnd={activeCategory !== null ? handleDragEnd : undefined}
+                >
                   <div className="flex justify-between">
-                    <h3 className="text-lg font-semibold text-gray-800">{item.title}</h3>
-                    <div className="text-lg font-bold text-indigo-600">${parseFloat(item.price.toString()).toFixed(2)}</div>
-                  </div>
-                  <p className="text-gray-600 mt-1">{item.description}</p>
-                  {item.category && (
-                    <p className="text-sm text-gray-500 mt-1">Category: {item.category}</p>
-                  )}
-                  {item.is_featured && (
-                    <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded mt-2">
-                      Featured
-                    </span>
-                  )}
-                  <div className="flex space-x-2 mt-4">
-                    <button
-                      onClick={() => handleEditItem(item)}
-                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        {activeCategory !== null && (
+                          <span className="mr-2 text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                          </span>
+                        )}
+                        <h3 className="text-lg font-semibold text-gray-800">{item.title}</h3>
+                      </div>
+                      <div className="text-lg font-bold text-indigo-600 mt-1">${parseFloat(item.price.toString()).toFixed(2)}</div>
+                      <p className="text-gray-600 mt-1">{item.description}</p>
+                      
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {item.category && (
+                          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                            {item.category}
+                          </span>
+                        )}
+                        {item.is_featured && (
+                          <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
+                            Featured
+                          </span>
+                        )}
+                        <span className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                          Order: {item.sequence || 0}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col space-y-2 ml-4">
+                      <button
+                        onClick={() => handleEditItem(item)}
+                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

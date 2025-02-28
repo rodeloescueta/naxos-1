@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { Category } from './categories';
 
 export interface MenuItem {
   id: string;
@@ -6,8 +7,10 @@ export interface MenuItem {
   description: string;
   price: number;
   photo_url: string | null;
-  category: string | null;
+  category: string | null; // Keeping for backward compatibility
+  category_id: string | null;
   is_featured: boolean;
+  sequence: number;
   created_at: string;
 }
 
@@ -16,8 +19,10 @@ export interface CreateMenuItemData {
   description: string;
   price: number;
   photo_url?: string;
-  category?: string;
+  category?: string; // Keeping for backward compatibility
+  category_id?: string;
   is_featured?: boolean;
+  sequence?: number;
 }
 
 export interface UpdateMenuItemData {
@@ -25,8 +30,10 @@ export interface UpdateMenuItemData {
   description?: string | null;
   price?: number;
   photo_url?: string | null;
-  category?: string | null;
+  category?: string | null; // Keeping for backward compatibility
+  category_id?: string | null;
   is_featured?: boolean;
+  sequence?: number;
 }
 
 // Get all menu items (public)
@@ -37,7 +44,7 @@ export async function getMenuItems(): Promise<MenuItem[]> {
     const { data, error } = await supabase
       .from('menu_items')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('sequence', { ascending: true });
     
     if (error) {
       console.error('Menu items: Error fetching menu items:', error.message);
@@ -48,6 +55,32 @@ export async function getMenuItems(): Promise<MenuItem[]> {
     return data as MenuItem[];
   } catch (error) {
     console.error('Menu items: Unexpected error fetching menu items:', error);
+    throw error;
+  }
+}
+
+// Get menu items with category information
+export async function getMenuItemsWithCategories(): Promise<(MenuItem & { category_info: Category | null })[]> {
+  console.log('Menu items: Fetching all menu items with category information');
+  
+  try {
+    const { data, error } = await supabase
+      .from('menu_items')
+      .select(`
+        *,
+        category_info:categories(*)
+      `)
+      .order('sequence', { ascending: true });
+    
+    if (error) {
+      console.error('Menu items: Error fetching menu items with categories:', error.message);
+      throw error;
+    }
+    
+    console.log(`Menu items: Successfully fetched ${data.length} menu items with categories`);
+    return data as (MenuItem & { category_info: Category | null })[];
+  } catch (error) {
+    console.error('Menu items: Unexpected error fetching menu items with categories:', error);
     throw error;
   }
 }
@@ -85,6 +118,23 @@ export async function createMenuItem(data: CreateMenuItemData): Promise<MenuItem
   console.log('Menu items: Creating new menu item:', data.title);
   
   try {
+    // If sequence is not provided, get the highest sequence for the category and add 1
+    if (data.sequence === undefined) {
+      const { data: menuItems, error: seqError } = await supabase
+        .from('menu_items')
+        .select('sequence')
+        .eq('category_id', data.category_id || null)
+        .order('sequence', { ascending: false })
+        .limit(1);
+      
+      if (seqError) {
+        console.error('Menu items: Error getting highest sequence:', seqError.message);
+        throw seqError;
+      }
+      
+      data.sequence = menuItems.length > 0 ? menuItems[0].sequence + 1 : 0;
+    }
+    
     const { data: newItem, error } = await supabase
       .from('menu_items')
       .insert([data])
@@ -105,7 +155,7 @@ export async function createMenuItem(data: CreateMenuItemData): Promise<MenuItem
 }
 
 // Update an existing menu item (authenticated users only)
-export async function updateMenuItem(id: string, data: Partial<CreateMenuItemData>): Promise<MenuItem> {
+export async function updateMenuItem(id: string, data: UpdateMenuItemData): Promise<MenuItem> {
   console.log(`Menu items: Updating menu item with ID: ${id}`);
   
   try {
@@ -158,7 +208,7 @@ export async function getFeaturedMenuItems(): Promise<MenuItem[]> {
     .from('menu_items')
     .select('*')
     .eq('is_featured', true)
-    .order('created_at', { ascending: false });
+    .order('sequence', { ascending: true });
 
   if (error) {
     console.error('Error fetching featured menu items:', error);
@@ -170,20 +220,20 @@ export async function getFeaturedMenuItems(): Promise<MenuItem[]> {
 }
 
 // Get menu items by category - public access
-export async function getMenuItemsByCategory(category: string): Promise<MenuItem[]> {
-  console.log(`Fetching menu items for category: ${category}`);
+export async function getMenuItemsByCategory(categoryId: string): Promise<MenuItem[]> {
+  console.log(`Fetching menu items for category ID: ${categoryId}`);
   const { data, error } = await supabase
     .from('menu_items')
     .select('*')
-    .eq('category', category)
-    .order('created_at', { ascending: false });
+    .eq('category_id', categoryId)
+    .order('sequence', { ascending: true });
 
   if (error) {
-    console.error(`Error fetching menu items for category ${category}:`, error);
+    console.error(`Error fetching menu items for category ID ${categoryId}:`, error);
     throw error;
   }
 
-  console.log(`Retrieved ${data?.length || 0} menu items for category ${category}`);
+  console.log(`Retrieved ${data?.length || 0} menu items for category ID ${categoryId}`);
   return data || [];
 }
 
@@ -193,7 +243,7 @@ export async function adminGetAllMenuItems(): Promise<MenuItem[]> {
   const { data, error } = await supabase
     .from('menu_items')
     .select('*')
-    .order('created_at', { ascending: false });
+    .order('sequence', { ascending: true });
 
   if (error) {
     console.error('Error fetching all menu items as admin:', error);
@@ -202,4 +252,29 @@ export async function adminGetAllMenuItems(): Promise<MenuItem[]> {
 
   console.log(`Retrieved ${data?.length || 0} menu items for admin view`);
   return data || [];
+}
+
+// Reorder menu items within a category (authenticated users only)
+export async function reorderMenuItems(categoryId: string | null, orderedIds: string[]): Promise<void> {
+  console.log(`Menu items: Reordering menu items for category ID: ${categoryId || 'uncategorized'}`);
+  
+  try {
+    // Start a transaction to update all sequences
+    for (let i = 0; i < orderedIds.length; i++) {
+      const { error } = await supabase
+        .from('menu_items')
+        .update({ sequence: i })
+        .eq('id', orderedIds[i]);
+      
+      if (error) {
+        console.error(`Menu items: Error updating sequence for menu item ${orderedIds[i]}:`, error.message);
+        throw error;
+      }
+    }
+    
+    console.log('Menu items: Successfully reordered menu items');
+  } catch (error) {
+    console.error('Menu items: Unexpected error reordering menu items:', error);
+    throw error;
+  }
 } 
