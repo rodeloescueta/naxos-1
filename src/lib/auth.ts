@@ -140,7 +140,6 @@ export async function getSession() {
   }
 }
 
-// Add the missing getUserRole function
 export async function getUserRole(user: User | null): Promise<string | null> {
   if (!user) {
     console.log('Auth: getUserRole - No user provided');
