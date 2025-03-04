@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { Facebook, Twitter, Instagram, Mail } from "lucide-react";
 
 const Navbar = () => {
   const { user, signOut, isLoading } = useAuth();
@@ -149,6 +150,22 @@ const Navbar = () => {
                 Admin
               </motion.button>
             )}
+          </div>
+
+          {/* Social Media Links */}
+          <div className="hidden md:flex items-center space-x-4 ml-4">
+            <Link href="https://facebook.com" target="_blank" aria-label="Facebook" className="text-white hover:text-primary transition-colors">
+              <Facebook className="w-4 h-4" />
+            </Link>
+            <Link href="https://twitter.com" target="_blank" aria-label="Twitter" className="text-white hover:text-primary transition-colors">
+              <Twitter className="w-4 h-4" />
+            </Link>
+            <Link href="https://instagram.com" target="_blank" aria-label="Instagram" className="text-white hover:text-primary transition-colors">
+              <Instagram className="w-4 h-4" />
+            </Link>
+            <Link href="mailto:info@naxos.com" aria-label="Email" className="text-white hover:text-primary transition-colors">
+              <Mail className="w-4 h-4" />
+            </Link>
           </div>
 
           {/* Auth Actions - Only shown on admin pages or when logged in */}

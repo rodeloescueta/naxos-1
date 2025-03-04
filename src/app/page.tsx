@@ -11,9 +11,9 @@ export default function Home() {
       <Navbar />
       <Hero />
       <Menu />
+      <Testimonials />
       <LocationSection />
       <ContactSection />
-      <Testimonials />
     </main>
   );
 }
