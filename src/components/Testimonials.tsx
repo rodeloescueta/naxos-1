@@ -3,9 +3,11 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Carousel } from "./ui/carousel";
-import { testimonials } from "@/lib/data/testimonials";
+import data from "@/lib/data/data.json";
 
 export default function Testimonials() {
+  const { title, subtitle, items } = data.testimonials;
+
   return (
     <section id="testimonials" className="py-20">
       <div className="container mx-auto px-4">
@@ -17,17 +19,18 @@ export default function Testimonials() {
           className="text-center mb-24"
         >
           <h2 className="text-4xl md:text-6xl font-display text-foreground mb-4">
-            What Our
-            <br />
-            Customers Say
+            {title}
           </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            {subtitle}
+          </p>
         </motion.div>
 
         <div className="max-w-5xl mx-auto">
           <Carousel slideClassName="pl-4 md:px-4">
-            {testimonials.map((testimonial) => (
+            {items.map((testimonial, index) => (
               <motion.div
-                key={testimonial.id}
+                key={index}
                 className="relative md:pt-48 mr-4 md:mr-0"
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.2 }}
@@ -36,8 +39,8 @@ export default function Testimonials() {
                 <div className="absolute md:absolute right-4 top-1/2 md:-top-8 md:right-8 w-48 h-48 md:w-96 md:h-96 -translate-y-1/2 md:translate-y-0 z-10">
                   <div className="relative w-full h-full">
                     <Image
-                      src={testimonial.image}
-                      alt={testimonial.name}
+                      src={testimonial.avatarUrl}
+                      alt={testimonial.author}
                       fill
                       className="object-contain"
                     />
@@ -53,13 +56,12 @@ export default function Testimonials() {
                   {/* Content */}
                   <div className="relative max-w-xl">
                     <p className="text-[#c4a484] text-base md:text-xl leading-relaxed mb-6 md:mb-8">
-                      &ldquo;{testimonial.comment}&rdquo;
+                      &ldquo;{testimonial.text}&rdquo;
                     </p>
                     <div>
                       <h4 className="text-lg md:text-2xl font-semibold text-[#e6c9a2]">
-                        {testimonial.name}
+                        {testimonial.author}
                       </h4>
-                      <p className="text-[#a68a6c] text-base md:text-lg">{testimonial.role}</p>
                     </div>
                   </div>
                 </div>

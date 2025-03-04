@@ -11,6 +11,7 @@ import { getCategories } from "@/lib/categories";
 import { getMenuItemsByCategory } from "@/lib/menu-items";
 import type { Category } from "@/lib/categories";
 import type { MenuItem } from "@/lib/menu-items";
+import data from "@/lib/data/data.json";
 
 export default function Menu() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -74,9 +75,9 @@ export default function Menu() {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl font-bold mb-4">Our Menu</h2>
+          <h2 className="text-4xl font-bold mb-4">{data.menu.title}</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Discover our carefully curated selection of authentic Greek dishes
+            {data.menu.subtitle}
           </p>
         </motion.div>
 

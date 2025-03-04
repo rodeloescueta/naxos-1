@@ -2,6 +2,7 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
+import data from "@/lib/data/data.json";
 
 const Hero = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -9,6 +10,8 @@ const Hero = () => {
   
   const titleY = useTransform(scrollY, [0, 500], [0, 150]);
   const subtitleY = useTransform(scrollY, [0, 500], [0, 100]);
+
+  const { title, subtitle, buttonText } = data.hero;
 
   return (
     <section id="home" ref={ref} className="relative min-h-screen pt-24">
@@ -34,15 +37,13 @@ const Hero = () => {
             style={{ y: titleY }}
             className="text-5xl md:text-7xl font-display text-foreground max-w-4xl leading-tight"
           >
-            Tea captivates our hearts, and invites us
-            <br />
-            on an inspirational Journey.
+            {title}
           </motion.h1>
           <motion.p 
             style={{ y: subtitleY }}
             className="mt-6 text-lg text-muted-foreground max-w-2xl"
           >
-            Experience the authentic taste of Greek cuisine in every bite.
+            {subtitle}
           </motion.p>
           
           <motion.div
@@ -55,7 +56,7 @@ const Hero = () => {
               onClick={() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' })}
               className="px-6 py-3 bg-primary text-white rounded-md font-medium hover:bg-primary/90 transition-colors"
             >
-              Explore Our Menu
+              {buttonText}
             </button>
           </motion.div>
         </div>
