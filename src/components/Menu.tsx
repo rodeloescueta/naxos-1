@@ -14,41 +14,39 @@ import type { MenuItem } from "@/lib/menu-items";
 import data from "@/lib/data/data.json";
 
 export default function Menu() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Fetch categories on component mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const categoriesData = await getCategories();
-        setCategories(categoriesData);
-        
-        // Set the first category as selected by default
-        if (categoriesData.length > 0 && !selectedCategory) {
-          setSelectedCategory(categoriesData[0].id);
+        const response = await fetch('/api/categories');
+        const data = await response.json();
+        setCategories(data);
+        if (data.length > 0) {
+          setSelectedCategory(data[0].id);
         }
       } catch (error) {
-        console.error("Error fetching categories:", error);
+        console.error('Error fetching categories:', error);
       }
     };
 
     fetchCategories();
-  }, [selectedCategory]);
+  }, []);
 
-  // Fetch menu items when selected category changes
   useEffect(() => {
     const fetchMenuItems = async () => {
       if (!selectedCategory) return;
       
       setLoading(true);
       try {
-        const items = await getMenuItemsByCategory(selectedCategory);
-        setMenuItems(items);
+        const response = await fetch(`/api/menu-items?category=${selectedCategory}`);
+        const data = await response.json();
+        setMenuItems(data);
       } catch (error) {
-        console.error("Error fetching menu items:", error);
+        console.error('Error fetching menu items:', error);
       } finally {
         setLoading(false);
       }
@@ -57,7 +55,6 @@ export default function Menu() {
     fetchMenuItems();
   }, [selectedCategory]);
 
-  // Format price as currency
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-GB', {
       style: 'currency',
@@ -66,104 +63,85 @@ export default function Menu() {
   };
 
   return (
-    <section id="menu" className="py-20">
+    <section id="menu" className="py-16 bg-[#121212] text-white">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
           transition={{ duration: 0.5 }}
+          viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl font-bold mb-4">{data.menu.title}</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            {data.menu.subtitle}
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 uppercase tracking-wider">OUR MENU</h2>
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            Explore our selection of delicious dishes made with fresh ingredients.
           </p>
         </motion.div>
 
-        {/* Category buttons with horizontal scroll on mobile */}
-        <div className="relative mb-12">
-          <div className="flex justify-start md:justify-center gap-3 overflow-x-auto pb-4 px-4 -mx-4 scrollbar-none">
-            <div className="flex gap-3 md:flex-wrap">
-              {categories.map((category) => (
-                <motion.button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={cn(
-                    "px-4 py-2 rounded-full transition-colors whitespace-nowrap",
-                    selectedCategory === category.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted hover:bg-muted/80"
-                  )}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {category.name}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          viewport={{ once: true }}
+          className="flex flex-wrap justify-center gap-4 mb-12"
+        >
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                selectedCategory === category.id
+                  ? 'bg-white text-black'
+                  : 'bg-transparent text-gray-300 border border-gray-700 hover:border-white hover:text-white'
+              }`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </motion.div>
 
-        <div className="max-w-6xl mx-auto">
+        <div className="mt-8">
           {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-              <p className="mt-4 text-muted-foreground">Loading menu items...</p>
-            </div>
+            <p className="text-center text-gray-400">Loading menu items...</p>
           ) : menuItems.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No menu items found in this category.</p>
-            </div>
+            <p className="text-center text-gray-400">No items found for this category.</p>
           ) : (
-            <Carousel slideClassName="pl-4 md:px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+            >
               {menuItems.map((item) => (
                 <motion.div
                   key={item.id}
-                  className="relative rounded-xl overflow-hidden shadow-lg mr-4 md:mr-0"
-                  whileHover={{ scale: 1.02, translateY: -5 }}
+                  whileHover={{ scale: 1.03 }}
                   transition={{ duration: 0.2 }}
+                  className="flex flex-col items-center text-center"
                 >
-                  {/* Wooden board background */}
-                  <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(/images/decorative/board.jpeg)' }} />
-                  
-                  {/* Dark overlay for better readability */}
-                  <div className="absolute inset-0 bg-black/40" />
-
-                  {/* Content container with glass effect */}
-                  <div className="relative">
-                    <div className="aspect-[16/10] relative">
+                  <div className="relative h-32 w-32 rounded-full overflow-hidden mb-4 border-2 border-gray-800">
+                    {item.photo_url ? (
                       <Image
-                        src={item.photo_url || '/images/placeholder-food.jpg'}
+                        src={item.photo_url}
                         alt={item.title}
                         fill
                         className="object-cover"
                       />
-                    </div>
-                    <div className="p-4 md:p-6 backdrop-blur-sm bg-black/30">
-                      <div className="flex justify-between items-start gap-4 mb-2">
-                        <h3 className="text-lg md:text-xl font-semibold flex-1 text-white">
-                          {item.title}
-                        </h3>
-                        <span className="text-base md:text-lg font-medium text-white whitespace-nowrap">
-                          {formatPrice(item.price)}
-                        </span>
+                    ) : (
+                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                        <span className="text-gray-500">No image</span>
                       </div>
-                      <p className="text-sm md:text-base text-gray-200 mb-4 line-clamp-2">
-                        {item.description}
-                      </p>
-                      <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="flex justify-end"
-                      >
-                        {/* Add to cart button could go here */}
-                      </motion.div>
-                    </div>
+                    )}
                   </div>
+                  <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                  <p className="text-gray-400 text-sm mb-3 max-w-xs">{item.description}</p>
+                  <span className="text-yellow-400 font-semibold">
+                    {formatPrice(item.price)}
+                  </span>
                 </motion.div>
               ))}
-            </Carousel>
+            </motion.div>
           )}
         </div>
       </div>
