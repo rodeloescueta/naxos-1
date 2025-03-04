@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Facebook, Twitter, Instagram, Mail } from "lucide-react";
 
 const Navbar = () => {
   const { user, signOut, isLoading } = useAuth();
@@ -66,8 +65,8 @@ const Navbar = () => {
   const getNavItemClasses = (sectionId: string) => {
     const baseClasses = "text-lg font-semibold transition-all duration-200 relative";
     const activeClasses = activeSection === sectionId 
-      ? "text-primary font-bold" 
-      : "text-foreground hover:text-primary";
+      ? "text-white font-bold after:content-[''] after:absolute after:w-full after:h-0.5 after:bg-white after:bottom-[-4px] after:left-0" 
+      : "text-white hover:text-white hover:after:content-[''] hover:after:absolute hover:after:w-full hover:after:h-0.5 hover:after:bg-white hover:after:bottom-[-4px] hover:after:left-0";
     
     return `${baseClasses} ${activeClasses}`;
   };
@@ -77,29 +76,8 @@ const Navbar = () => {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white"
+      className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm"
     >
-      {/* Social Media Bar */}
-      <div className="bg-gray-100 py-1">
-        <div className="container mx-auto px-4 flex justify-end">
-          <div className="flex items-center space-x-4">
-            <Link href="https://facebook.com" target="_blank" aria-label="Facebook">
-              <Facebook className="w-4 h-4 text-gray-600 hover:text-primary" />
-            </Link>
-            <Link href="https://twitter.com" target="_blank" aria-label="Twitter">
-              <Twitter className="w-4 h-4 text-gray-600 hover:text-primary" />
-            </Link>
-            <Link href="https://instagram.com" target="_blank" aria-label="Instagram">
-              <Instagram className="w-4 h-4 text-gray-600 hover:text-primary" />
-            </Link>
-            <Link href="mailto:info@naxos.com" aria-label="Email">
-              <Mail className="w-4 h-4 text-gray-600 hover:text-primary" />
-            </Link>
-          </div>
-        </div>
-      </div>
-      
-      {/* Main Navigation */}
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -118,7 +96,7 @@ const Navbar = () => {
                 priority
               />
             </div>
-            <span className="text-2xl font-bold font-display text-foreground">Naxos</span>
+            <span className="text-2xl font-bold font-display text-white">Naxos</span>
           </motion.button>
 
           {/* Navigation Links */}
@@ -139,7 +117,7 @@ const Navbar = () => {
               whileTap={{ scale: 0.95 }}
               aria-label="Go to menu section"
             >
-              Our Menu
+              Menu
             </motion.button>
             <motion.button
               onClick={() => scrollToSection("location")}
@@ -148,7 +126,7 @@ const Navbar = () => {
               whileTap={{ scale: 0.95 }}
               aria-label="Go to location section"
             >
-              Our Location
+              Location
             </motion.button>
             <motion.button
               onClick={() => scrollToSection("contact")}
