@@ -7,42 +7,62 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Carousel } from "./ui/carousel";
 import Image from "next/image";
+import { getCategories } from "@/lib/categories";
+import { getMenuItemsByCategory } from "@/lib/menu-items";
+import type { Category } from "@/lib/categories";
+import type { MenuItem } from "@/lib/menu-items";
 import data from "@/lib/data/data.json";
 
 export default function Menu() {
-  const [categories, setCategories] = useState<any[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [menuItems, setMenuItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch categories on component mount
   useEffect(() => {
-    // Use data from data.json instead of fetching from API
-    if (data.menu && data.menu.categories) {
-      setCategories(data.menu.categories);
-      if (data.menu.categories.length > 0) {
-        setSelectedCategory(data.menu.categories[0].id);
+    const fetchCategories = async () => {
+      try {
+        const categoriesData = await getCategories();
+        setCategories(categoriesData);
+        
+        // Set the first category as selected by default
+        if (categoriesData.length > 0 && !selectedCategory) {
+          setSelectedCategory(categoriesData[0].id);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
       }
-    }
-    setLoading(false);
-  }, []);
+    };
 
+    fetchCategories();
+  }, [selectedCategory]);
+
+  // Fetch menu items when selected category changes
   useEffect(() => {
-    // Use data from data.json instead of fetching from API
-    if (selectedCategory && data.menu && data.menu.categories) {
-      const category = data.menu.categories.find(cat => cat.id === selectedCategory);
-      if (category && category.items) {
-        setMenuItems(category.items);
-      } else {
-        setMenuItems([]);
+    const fetchMenuItems = async () => {
+      if (!selectedCategory) return;
+      
+      setLoading(true);
+      try {
+        const items = await getMenuItemsByCategory(selectedCategory);
+        setMenuItems(items);
+      } catch (error) {
+        console.error("Error fetching menu items:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    fetchMenuItems();
   }, [selectedCategory]);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-GB', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'GBP',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(price);
   };
 
@@ -56,9 +76,9 @@ export default function Menu() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 uppercase tracking-wider">OUR MENU</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 uppercase tracking-wider">DISCOVER OUR MENU</h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Explore our selection of delicious dishes made with fresh ingredients.
+            {data.menu.subtitle}
           </p>
         </motion.div>
 
@@ -73,10 +93,10 @@ export default function Menu() {
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+              className={`px-6 py-2 text-sm font-medium transition-all duration-300 uppercase tracking-wider ${
                 selectedCategory === category.id
-                  ? 'bg-white text-black'
-                  : 'bg-transparent text-gray-300 border border-gray-700 hover:border-white hover:text-white'
+                  ? 'text-yellow-400 border-b-2 border-yellow-400'
+                  : 'text-gray-300 hover:text-white'
               }`}
             >
               {category.name}
@@ -104,7 +124,7 @@ export default function Menu() {
                   transition={{ duration: 0.2 }}
                   className="flex flex-col items-center text-center"
                 >
-                  <div className="relative h-32 w-32 rounded-full overflow-hidden mb-4 border-2 border-gray-800">
+                  <div className="relative h-40 w-40 rounded-full overflow-hidden mb-4">
                     {item.photo_url ? (
                       <Image
                         src={item.photo_url}
@@ -118,7 +138,7 @@ export default function Menu() {
                       </div>
                     )}
                   </div>
-                  <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                  <h3 className="text-xl font-bold mb-2 uppercase">{item.title}</h3>
                   <p className="text-gray-400 text-sm mb-3 max-w-xs">{item.description}</p>
                   <span className="text-yellow-400 font-semibold">
                     {formatPrice(item.price)}
