@@ -5,11 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Facebook, Twitter, Instagram, Mail } from "lucide-react";
 
 const Navbar = () => {
   const { user, signOut, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   
   // Only show auth buttons on admin pages or when user is logged in
   const showAuthButtons = pathname.includes('/admin') || 
@@ -17,10 +20,36 @@ const Navbar = () => {
                           pathname.includes('/signup') || 
                           user !== null;
 
+  // Function to check which section is currently in view
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ["home", "menu", "location", "contact"];
+      const scrollPosition = window.scrollY + 100; // Adding offset for navbar height
+      
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const { offsetTop, offsetHeight } = element;
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSection(section);
+            return;
+          }
+        }
+      }
+      
+      // If no section is in view, set to null
+      setActiveSection(null);
+    };
+    
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
+      setActiveSection(sectionId);
     }
   };
 
@@ -33,13 +62,44 @@ const Navbar = () => {
     }
   };
 
+  // Helper function to determine nav item classes
+  const getNavItemClasses = (sectionId: string) => {
+    const baseClasses = "text-lg font-semibold transition-all duration-200 relative";
+    const activeClasses = activeSection === sectionId 
+      ? "text-primary font-bold" 
+      : "text-foreground hover:text-primary";
+    
+    return `${baseClasses} ${activeClasses}`;
+  };
+
   return (
     <motion.nav 
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 right-0 z-50 border-muted"
+      className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white"
     >
+      {/* Social Media Bar */}
+      <div className="bg-gray-100 py-1">
+        <div className="container mx-auto px-4 flex justify-end">
+          <div className="flex items-center space-x-4">
+            <Link href="https://facebook.com" target="_blank" aria-label="Facebook">
+              <Facebook className="w-4 h-4 text-gray-600 hover:text-primary" />
+            </Link>
+            <Link href="https://twitter.com" target="_blank" aria-label="Twitter">
+              <Twitter className="w-4 h-4 text-gray-600 hover:text-primary" />
+            </Link>
+            <Link href="https://instagram.com" target="_blank" aria-label="Instagram">
+              <Instagram className="w-4 h-4 text-gray-600 hover:text-primary" />
+            </Link>
+            <Link href="mailto:info@naxos.com" aria-label="Email">
+              <Mail className="w-4 h-4 text-gray-600 hover:text-primary" />
+            </Link>
+          </div>
+        </div>
+      </div>
+      
+      {/* Main Navigation */}
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -64,26 +124,38 @@ const Navbar = () => {
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-8">
             <motion.button
-              onClick={() => scrollToSection("menu")}
-              className="text-muted-foreground text-lg text-boldtext-white hover:text-accent transition"
+              onClick={() => scrollToSection("home")}
+              className={getNavItemClasses("home")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              aria-label="Go to home section"
             >
-              Menu
+              Home
+            </motion.button>
+            <motion.button
+              onClick={() => scrollToSection("menu")}
+              className={getNavItemClasses("menu")}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Go to menu section"
+            >
+              Our Menu
             </motion.button>
             <motion.button
               onClick={() => scrollToSection("location")}
-              className="text-muted-foreground text-lg text-bold text-white hover:text-accent transition"
+              className={getNavItemClasses("location")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              aria-label="Go to location section"
             >
-              Location
+              Our Location
             </motion.button>
             <motion.button
               onClick={() => scrollToSection("contact")}
-              className="text-muted-foreground text-lg text-bold text-white hover:text-accent transition"
+              className={getNavItemClasses("contact")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              aria-label="Go to contact section"
             >
               Contact
             </motion.button>

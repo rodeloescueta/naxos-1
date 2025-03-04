@@ -7,13 +7,13 @@ import ContactSection from "@/components/ContactSection";
 
 export default function Home() {
   return (
-    <main className="min-h-screen ">
+    <main className="min-h-screen">
       <Navbar />
       <Hero />
       <Menu />
-      <Testimonials />
       <LocationSection />
       <ContactSection />
+      <Testimonials />
     </main>
   );
 }
