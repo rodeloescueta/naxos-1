@@ -7,10 +7,6 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Carousel } from "./ui/carousel";
 import Image from "next/image";
-import { getCategories } from "@/lib/categories";
-import { getMenuItemsByCategory } from "@/lib/menu-items";
-import type { Category } from "@/lib/categories";
-import type { MenuItem } from "@/lib/menu-items";
 import data from "@/lib/data/data.json";
 
 export default function Menu() {
@@ -20,39 +16,27 @@ export default function Menu() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch('/api/categories');
-        const data = await response.json();
-        setCategories(data);
-        if (data.length > 0) {
-          setSelectedCategory(data[0].id);
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
+    // Use data from data.json instead of fetching from API
+    if (data.menu && data.menu.categories) {
+      setCategories(data.menu.categories);
+      if (data.menu.categories.length > 0) {
+        setSelectedCategory(data.menu.categories[0].id);
       }
-    };
-
-    fetchCategories();
+    }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    const fetchMenuItems = async () => {
-      if (!selectedCategory) return;
-      
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/menu-items?category=${selectedCategory}`);
-        const data = await response.json();
-        setMenuItems(data);
-      } catch (error) {
-        console.error('Error fetching menu items:', error);
-      } finally {
-        setLoading(false);
+    // Use data from data.json instead of fetching from API
+    if (selectedCategory && data.menu && data.menu.categories) {
+      const category = data.menu.categories.find(cat => cat.id === selectedCategory);
+      if (category && category.items) {
+        setMenuItems(category.items);
+      } else {
+        setMenuItems([]);
       }
-    };
-
-    fetchMenuItems();
+    }
+    setLoading(false);
   }, [selectedCategory]);
 
   const formatPrice = (price: number) => {
